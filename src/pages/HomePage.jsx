@@ -134,7 +134,7 @@ export default function HomePage() {
             <p className="mt-3 max-w-xl text-sm leading-6 text-[#b9c5cc] sm:text-base">Discover visual math, practical tutorials, creative coding, and original videos on uVideo!</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <a href="https://mathart.unrealcake8.site" className="rounded-full bg-[#3ea6ff] px-5 py-2.5 text-sm font-black text-[#06131c] transition hover:bg-[#70bdff]">Explore MathArt, our tool to make Art. ↗</a>
-              <a href="https://mathart.unrealcake8.site/tips/" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/15">Explore the UC8 Foundation, a non-commercial foundation making things. ↗</a>
+              <a href="https://unrealcake8.site" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/15">Explore the UC8 Foundation, a non-commercial foundation making things. ↗</a>
             </div>
           </div>
         </section>
