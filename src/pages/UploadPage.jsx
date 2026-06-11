@@ -85,17 +85,17 @@ export default function UploadPage() {
   }
 
   return (
-    <div className="theme-app-bg p-4 mx-auto max-w-2xl space-y-4">
-      <h1 className="text-3xl font-bold text-[var(--brand-olive)]">Upload video</h1>
-      <p className="theme-muted">Upload a video file to Bunny.net, or paste a direct MP4 link as a backup.</p>
+    <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-8">
+      <div><p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p><h1 className="mt-2 text-3xl font-black">Upload to UVideo</h1></div>
+      <p className="theme-muted">Share a MathArt video, tutorial, creator story, or short with the UVideo community.</p>
 
       <p className="text-sm theme-muted">Posting as @{username || 'set-username-in-profile'}</p>
 
-      <form className="theme-card grid gap-3 rounded-2xl border p-4" onSubmit={handleSubmit}>
-        <input className="theme-input rounded-xl border px-3 py-2" name="title" placeholder="Caption / title" required />
+      <form className="theme-card grid gap-4 rounded-2xl border p-5 sm:p-6" onSubmit={handleSubmit}>
+        <input className="theme-input rounded-xl border px-3 py-2" name="title" placeholder="Video title" required />
         <textarea className="theme-input rounded-xl border px-3 py-2" name="description" placeholder="Description" required />
         <div className="grid gap-2 sm:grid-cols-2">
-          <input className="theme-input rounded-xl border px-3 py-2" name="category" placeholder="Category" />
+          <select className="theme-input rounded-xl border px-3 py-2" name="category" defaultValue="MathArt"><option>MathArt</option><option>Tutorial</option><option>Coding</option><option>Desmos</option><option>Shorts</option><option>UnrealCake8</option><option>General</option></select>
           <input className="theme-input rounded-xl border px-3 py-2" name="points" type="number" min="5" defaultValue="20" />
         </div>
         <label className="grid gap-1 text-sm font-semibold">
@@ -123,7 +123,7 @@ export default function UploadPage() {
           placeholder="Optional .vtt caption URL"
           type="url"
         />
-        <button className="rounded-full bg-[var(--brand-olive)] px-4 py-2 font-semibold text-white disabled:opacity-60" disabled={submitting}>
+        <button className="rounded-full bg-[#3ea6ff] px-5 py-2.5 font-black text-[#06131c] transition hover:bg-[#70bdff] disabled:opacity-60" disabled={submitting}>
           {submitting ? 'Publishing...' : 'Publish video'}
         </button>
         {status && <p className="text-sm theme-muted">{status}</p>}

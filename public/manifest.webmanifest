@@ -1,21 +1,15 @@
 {
-  "name": "HoloStem",
-  "short_name": "HoloStem",
+  "name": "UVideo",
+  "short_name": "UVideo",
   "id": "/",
   "scope": "/",
   "lang": "en",
   "start_url": "/",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#eef2f7",
-  "theme_color": "#0077ff",
-  "description": "HoloStem: watch, listen, play, and connect in one app.",
-  "categories": ["entertainment", "social", "music"],
-  "icons": [
-    {
-      "src": "/favicon.svg",
-      "type": "image/svg+xml",
-      "sizes": "any"
-    }
-  ]
+  "orientation": "any",
+  "background_color": "#0f0f0f",
+  "theme_color": "#0f0f0f",
+  "description": "Videos for creators, coders, and MathArt makers from UnrealCake8.",
+  "categories": ["education", "entertainment", "video"],
+  "icons": [{ "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" }]
 }

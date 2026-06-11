@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { addUserStrike, fetchModeratorQueue, fetchProfilesByIds, fetchReports, getProfile, updateContentModeration, updateReportStatus } from '../lib/contentApi'
 import { useAuth } from '../context/useAuth'
 
@@ -13,7 +13,7 @@ export default function ModeratorDashboardPage() {
   const [showOnlyActionItems, setShowOnlyActionItems] = useState(true)
   const [filters, setFilters] = useState({ status: 'all', target_type: 'all', report_status: 'open' })
 
-  async function load() {
+  const load = useCallback(async () => {
     const [q, r] = await Promise.all([
       fetchModeratorQueue({ status: filters.status === 'all' ? undefined : filters.status }),
       fetchReports({ status: filters.report_status === 'all' ? undefined : filters.report_status, target_type: filters.target_type === 'all' ? undefined : filters.target_type }),
@@ -23,7 +23,7 @@ export default function ModeratorDashboardPage() {
     setProfileMap(profiles)
     setQueue(q)
     setReports(r)
-  }
+  }, [filters.report_status, filters.status, filters.target_type])
 
   useEffect(() => {
     async function init() {
@@ -34,7 +34,7 @@ export default function ModeratorDashboardPage() {
     init()
   }, [user?.id])
 
-  useEffect(() => { if (allowed) load() }, [allowed, filters.status, filters.target_type, filters.report_status])
+  useEffect(() => { if (allowed) load() }, [allowed, load])
 
   const actionableQueue = useMemo(() => queue.filter((item) => item.status !== 'published'), [queue])
   const visibleQueue = showOnlyActionItems ? actionableQueue : queue

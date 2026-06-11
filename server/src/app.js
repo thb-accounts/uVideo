@@ -20,7 +20,7 @@ app.use(express.json({ limit: '1mb' }))
 app.get('/api/health', (_req, res) => {
   res.json({
     status: 'ok',
-    service: 'holostem-api',
+    service: 'uvideo-api',
     hasDatabaseUrl: Boolean(process.env.DATABASE_URL),
     hasJwtSecret: Boolean(process.env.JWT_SECRET),
   })

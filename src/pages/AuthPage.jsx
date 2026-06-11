@@ -9,7 +9,7 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [status, setStatus] = useState('')
 
-  if (user) return <Navigate to="/dashboard" replace />
+  if (user) return <Navigate to="/" replace />
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -39,7 +39,7 @@ export default function AuthPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
       <div className="w-full rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-glow">
-        <h1 className="mb-2 text-2xl font-bold text-neon-cyan">HoloStem</h1>
+        <h1 className="mb-2 text-2xl font-bold text-neon-cyan">UVideo</h1>
         <p className="mb-4 text-sm text-slate-300">Modern interactive media + learning for all ages.</p>
 
         {!hasSupabaseConfig && (

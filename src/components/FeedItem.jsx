@@ -550,13 +550,13 @@ export default function FeedItem({ item, isActive, onDeleted }) {
                     : 'bg-[var(--brand-olive)] text-white border-white'
                 }`}
               >
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? 'Subscribed' : 'Subscribe'}
               </button>
             )}
           </div>
           {item?.user_id && (
             <span className="hidden text-white text-[11px] font-semibold drop-shadow simple-mode-hidden -mt-3 lg:block">
-              {followersCount} followers
+              {followersCount} subscribers
             </span>
           )}
 
