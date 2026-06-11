@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react'
 import { createContent, getProfile } from '../lib/contentApi'
-import { uploadVideoToBunny } from '../lib/bunnyUpload'
 import { useAuth } from '../context/useAuth'
 
 export default function UploadPage() {
@@ -23,21 +22,20 @@ export default function UploadPage() {
     event.preventDefault()
     const form = event.currentTarget
     const formData = new FormData(form)
-    let mediaUrl = String(formData.get('media_url') || '').trim()
-    const videoFile = formData.get('video_file')
+    const mediaUrl = String(formData.get('media_url') || '').trim()
     const captionUrl = String(formData.get('caption_url') || '').trim()
     const title = String(formData.get('title') || '').trim()
     const description = String(formData.get('description') || '').trim()
     const category = String(formData.get('category') || 'General').trim()
     const points = Number(formData.get('points')) || 20
 
-    if ((!videoFile || videoFile.size === 0) && !mediaUrl) {
-      setStatus('Choose a video file or paste a direct MP4 link.')
+    if (!mediaUrl) {
+      setStatus('Paste a direct MP4 link to publish your video.')
       return
     }
 
     if (mediaUrl && !mediaUrl.toLowerCase().endsWith('.mp4')) {
-      setStatus('Backup links must be direct .mp4 URLs.')
+      setStatus('Video links must be direct .mp4 URLs.')
       return
     }
 
@@ -47,16 +45,11 @@ export default function UploadPage() {
     }
 
     setSubmitting(true)
-    setStatus(videoFile && videoFile.size > 0 ? 'Uploading your video to Bunny.net...' : 'Publishing your video...')
+    setStatus('Publishing your video...')
 
     try {
       if (!username) {
         throw new Error('Set a username in Profile before publishing.')
-      }
-
-      if (videoFile && videoFile.size > 0) {
-        mediaUrl = await uploadVideoToBunny(videoFile)
-        setStatus('Publishing your Bunny.net video...')
       }
 
       await createContent({
@@ -99,23 +92,20 @@ export default function UploadPage() {
           <input className="theme-input rounded-xl border px-3 py-2" name="points" type="number" min="5" defaultValue="20" />
         </div>
         <label className="grid gap-1 text-sm font-semibold">
-          Video file
-          <input
-            accept="video/*"
-            className="theme-input rounded-xl border px-3 py-2"
-            name="video_file"
-            type="file"
-          />
-          <span className="text-xs font-normal theme-muted">Uploaded videos are stored and delivered through Bunny.net.</span>
-        </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          Backup MP4 link
+          Direct MP4 link
           <input
             className="theme-input rounded-xl border px-3 py-2"
             name="media_url"
-            placeholder="Direct MP4 URL (optional backup)"
+            placeholder="https://example.com/video.mp4"
+            required
             type="url"
           />
+          <a
+            className="w-fit text-xs font-bold text-[#3ea6ff] underline decoration-[#3ea6ff]/50 underline-offset-4 hover:text-[#70bdff]"
+            href="https://server.unrealcake8.site"
+          >
+            Don&apos;t have a link? We can
+          </a>
         </label>
         <input
           className="theme-input rounded-xl border px-3 py-2"
