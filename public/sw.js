@@ -1,4 +1,4 @@
-const CACHE_NAME = 'holostem-cache-v1'
+const CACHE_NAME = 'uvideo-cache-v1'
 const urlsToCache = ['/', '/index.html', '/manifest.webmanifest']
 
 self.addEventListener('install', (event) => {

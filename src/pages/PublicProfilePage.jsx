@@ -178,7 +178,7 @@ export default function PublicProfilePage() {
                 disabled={!user?.id || !profileUserId}
                 className={`rounded-full px-4 py-1.5 text-base font-bold ${isFollowing ? 'bg-white/15 text-white' : 'bg-[var(--brand-olive)] text-white'} disabled:opacity-50`}
               >
-                {isFollowing ? 'Following' : 'Follow'}
+                {isFollowing ? 'Subscribed' : 'Subscribe'}
               </button>
             )}
           </div>
@@ -186,11 +186,11 @@ export default function PublicProfilePage() {
           <div className="mt-6 grid w-full max-w-sm grid-cols-3 divide-x divide-white/10">
             <button type="button" onClick={() => setActiveSocialList((current) => (current === 'following' ? '' : 'following'))}>
               <p className="text-3xl font-black">{followingCount}</p>
-              <p className="text-lg text-white/55">Following</p>
+              <p className="text-lg text-white/55">Subscriptions</p>
             </button>
             <button type="button" onClick={() => setActiveSocialList((current) => (current === 'followers' ? '' : 'followers'))}>
               <p className="text-3xl font-black">{followersCount}</p>
-              <p className="text-lg text-white/55">Followers</p>
+              <p className="text-lg text-white/55">Subscribers</p>
             </button>
             <div>
               <p className="text-3xl font-black">{totalLikes}</p>
@@ -199,10 +199,10 @@ export default function PublicProfilePage() {
           </div>
           {profile?.bio ? <p className="mt-5 text-xl">{profile.bio}</p> : <p className="mt-5 text-base text-white/45">No bio yet.</p>}
           {activeSocialList === 'following' && (
-            <SocialAccountList title="Following" entries={following} idKey="following_id" emptyMessage="Not following anyone yet." />
+            <SocialAccountList title="Subscriptions" entries={following} idKey="following_id" emptyMessage="No subscriptions yet." />
           )}
           {activeSocialList === 'followers' && (
-            <SocialAccountList title="Followers" entries={followers} idKey="follower_id" emptyMessage="No followers yet." />
+            <SocialAccountList title="Subscribers" entries={followers} idKey="follower_id" emptyMessage="No subscribers yet." />
           )}
         </div>
 
@@ -235,7 +235,7 @@ export default function PublicProfilePage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-[var(--brand-olive)]">@{username}</h1>
-              <p className="theme-muted">{profile?.display_name || 'HoloStem creator'}</p>
+              <p className="theme-muted">{profile?.display_name || 'UVideo creator'}</p>
               <p className="text-sm theme-muted">{profile?.bio || 'No bio yet.'}</p>
             </div>
           </div>
@@ -247,36 +247,36 @@ export default function PublicProfilePage() {
                 isFollowing ? 'bg-black/15 text-current' : 'bg-[var(--brand-olive)] text-white'
               } disabled:opacity-50`}
             >
-              {isFollowing ? 'Following' : 'Follow'}
+              {isFollowing ? 'Subscribed' : 'Subscribe'}
             </button>
           )}
         </div>
         <div className="flex gap-6 text-sm">
           <p><span className="font-bold">{videos.length}</span> posts</p>
-          <button type="button" onClick={() => setActiveSocialList('followers')}><span className="font-bold">{followersCount}</span> followers</button>
-          <button type="button" onClick={() => setActiveSocialList('following')}><span className="font-bold">{followingCount}</span> following</button>
+          <button type="button" onClick={() => setActiveSocialList('followers')}><span className="font-bold">{followersCount}</span> subscribers</button>
+          <button type="button" onClick={() => setActiveSocialList('following')}><span className="font-bold">{followingCount}</span> subscriptions</button>
         </div>
       </section>
 
       <section className="hidden gap-3 md:grid-cols-2 lg:grid">
         <div className="theme-card rounded-2xl border p-4">
-          <p className="mb-2 text-sm font-semibold theme-muted">Followers</p>
+          <p className="mb-2 text-sm font-semibold theme-muted">Subscribers</p>
           <div className="space-y-2">
-            {followers.length === 0 && <p className="text-sm theme-muted">No followers yet.</p>}
+            {followers.length === 0 && <p className="text-sm theme-muted">No subscribers yet.</p>}
             {followers.slice(0, 8).map((entry) => (
               <Link key={entry.follower_id} to={`/u/${entry.profiles?.username || 'user'}`} className="block text-sm theme-muted hover:text-current">
-                @{entry.profiles?.username || 'user'} · {entry.profiles?.display_name || 'HoloStem user'}
+                @{entry.profiles?.username || 'user'} · {entry.profiles?.display_name || 'UVideo user'}
               </Link>
             ))}
           </div>
         </div>
         <div className="theme-card rounded-2xl border p-4">
-          <p className="mb-2 text-sm font-semibold theme-muted">Following</p>
+          <p className="mb-2 text-sm font-semibold theme-muted">Subscriptions</p>
           <div className="space-y-2">
-            {following.length === 0 && <p className="text-sm theme-muted">Not following anyone yet.</p>}
+            {following.length === 0 && <p className="text-sm theme-muted">No subscriptions yet.</p>}
             {following.slice(0, 8).map((entry) => (
               <Link key={entry.following_id} to={`/u/${entry.profiles?.username || 'user'}`} className="block text-sm theme-muted hover:text-current">
-                @{entry.profiles?.username || 'user'} · {entry.profiles?.display_name || 'HoloStem user'}
+                @{entry.profiles?.username || 'user'} · {entry.profiles?.display_name || 'UVideo user'}
               </Link>
             ))}
           </div>

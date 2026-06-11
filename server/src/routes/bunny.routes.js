@@ -68,7 +68,7 @@ router.post('/upload', upload.single('video'), async (req, res) => {
   }
 
   const fileName = safeFileName(req.file.originalname)
-  const objectPath = `holostem/${fileName}`
+  const objectPath = `uvideo/${fileName}`
   const storageUrl = `https://${config.storageHost}/${config.storageZone}/${objectPath}`
 
   const bunnyResponse = await fetch(storageUrl, {

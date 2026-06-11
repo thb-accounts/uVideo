@@ -5,7 +5,7 @@ export const watchCatalog = [
 ]
 
 export const listenCatalog = [
-  { id: 'l1', title: 'Holo Morning Mix', type: 'Music', mood: 'Energetic' },
+  { id: 'l1', title: 'UVideo Creator Mix', type: 'Music', mood: 'Energetic' },
   { id: 'l2', title: 'Calm Space', type: 'Music', mood: 'Relaxed' },
   { id: 'l3', title: 'Tech Talk Today', type: 'Podcast', mood: 'Focused' },
 ]

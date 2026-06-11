@@ -1,311 +1,117 @@
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/useAuth'
 import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { fetchFollowStatus, followUser, unfollowUser } from '../lib/contentApi'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import BrandLogo from './BrandLogo'
+import { useAuth } from '../context/useAuth'
 
-const menuItems = [
-  { to: '/dashboard', label: 'For You', icon: '🏠' },
-  { to: '/dashboard?tab=explore', label: 'Explore', icon: '🧭' },
-  { to: '/dashboard?tab=following', label: 'Following', icon: '🫧' },
-  { to: '/dashboard?tab=activity', label: 'Activity', icon: '🔔' },
-  { to: '/upload', label: 'Upload video', icon: '⬆️' },
-  { to: '/profile', label: 'Profile', icon: '👤' },
-  { to: '/settings', label: 'Settings', icon: '⚙️' },
-]
-
-const navIconBaseUrl = 'https://unrealcake8.github.io/cdn-hls'
-
-const mobileNavItems = [
-  { to: '/dashboard', label: 'Home', iconFileName: 'home.png' },
-  { to: '/dashboard?tab=following', label: 'Following', iconFileName: 'following.png' },
-  { to: '/upload', label: 'Create', icon: '+' },
-  { to: '/dashboard?tab=activity', label: 'Inbox', iconFileName: 'inbox.png' },
-  { to: '/profile', label: 'Profile', iconFileName: 'profile.png' },
-]
-
-function SuggestedAccounts() {
-  const [accounts, setAccounts] = useState([])
-  const [followingMap, setFollowingMap] = useState({})
-  const { user } = useAuth()
-
-  useEffect(() => {
-    async function load() {
-      // Fetch up to 5 real profiles — exclude the current logged-in user
-      let query = supabase
-        .from('profiles')
-        .select('id, username, display_name, avatar_url')
-        .not('username', 'is', null)
-        .limit(5)
-
-      if (user?.id) {
-        query = query.neq('id', user.id)
-      }
-
-      const { data, error } = await query
-      if (!error && data) setAccounts(data)
-    }
-    load()
-  }, [user?.id])
-
-  useEffect(() => {
-    async function hydrateStatuses() {
-      if (!user?.id || accounts.length === 0) return
-      const entries = await Promise.all(
-        accounts.map(async (account) => [account.id, await fetchFollowStatus(user.id, account.id)]),
-      )
-      setFollowingMap(Object.fromEntries(entries))
-    }
-    hydrateStatuses()
-  }, [accounts, user?.id])
-
-  async function handleToggleFollow(accountId) {
-    if (!user?.id) return
-    const next = !followingMap[accountId]
-    setFollowingMap((prev) => ({ ...prev, [accountId]: next }))
-    try {
-      if (next) await followUser(user.id, accountId)
-      else await unfollowUser(user.id, accountId)
-    } catch {
-      setFollowingMap((prev) => ({ ...prev, [accountId]: !next }))
-    }
+const Icon = ({ name }) => {
+  const paths = {
+    home: <path d="M3 11.2 12 4l9 7.2V21h-6v-6H9v6H3v-9.8Z" />,
+    math: <path d="M4 5h16v14H4V5Zm3 3v2h4V8H7Zm0 5v2h2v-2H7Zm5 0v2h5v-2h-5Z" />,
+    tutorials: <path d="M4 5h16v12H8l-4 3V5Zm4 3v2h8V8H8Zm0 4v2h5v-2H8Z" />,
+    shorts: <path d="m9 3 8 4-5 3 5 3-8 8-2-7 5-3-5-3 2-5Z" />,
+    subscriptions: <path d="M5 5h14v3H5V5Zm-2 5h18v10H3V10Zm7 2.5v5l5-2.5-5-2.5Z" />,
+    upload: <path d="M11 16V8.8L8.4 11.4 7 10l5-5 5 5-1.4 1.4L13 8.8V16h-2ZM5 19v-2h14v2H5Z" />,
+    profile: <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0H5Z" />,
+    settings: <path d="m9.5 3 .5 2a7 7 0 0 1 4 0l.5-2 3 1.7-.9 1.8a7 7 0 0 1 2 3.5l2 .2v3.5l-2 .3a7 7 0 0 1-2 3.5l.9 1.8-3 1.7-.5-2a7 7 0 0 1-4 0l-.5 2-3-1.7.9-1.8a7 7 0 0 1-2-3.5l-2-.3v-3.5l2-.2a7 7 0 0 1 2-3.5l-.9-1.8L9.5 3ZM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z" />,
   }
-
-  if (accounts.length === 0) return null
-
-  return (
-    <div className="mt-6 border-t border-black/10 pt-4 simple-mode-hidden">
-      <p className="mb-2 text-xl font-medium theme-muted">Suggested accounts</p>
-      <ul className="space-y-3">
-        {accounts.map((account) => (
-          <li key={account.id}>
-            <div className="flex items-center gap-2 rounded-lg px-1 py-1 transition hover:bg-black/10">
-              <Link
-                to={`/u/${account.username}`}
-                className="flex min-w-0 flex-1 items-center gap-3"
-              >
-                {account.avatar_url ? (
-                  <img
-                    src={account.avatar_url}
-                    alt={account.username}
-                    className="h-10 w-10 rounded-full object-cover bg-black/20"
-                  />
-                ) : (
-                  <span className="brand-avatar flex h-10 w-10 items-center justify-center rounded-full text-lg font-bold">
-                    {(account.display_name || account.username || '?')[0].toUpperCase()}
-                  </span>
-                )}
-                <div className="min-w-0">
-                  <p className="truncate text-base font-semibold leading-tight">
-                    {account.display_name || account.username}
-                  </p>
-                  <p className="truncate text-sm theme-muted">@{account.username}</p>
-                </div>
-              </Link>
-              {user?.id && user.id !== account.id && (
-                <button
-                  onClick={() => handleToggleFollow(account.id)}
-                  className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                    followingMap[account.id]
-                      ? 'brand-button-soft text-current'
-                      : 'brand-button'
-                  }`}
-                >
-                  {followingMap[account.id] ? 'Following' : 'Follow'}
-                </button>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
+  return <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current" aria-hidden="true">{paths[name]}</svg>
 }
+
+const navigation = [
+  { to: '/', label: 'Home', icon: 'home' },
+  { href: 'https://mathart.unrealcake8.site', label: 'MathArt', icon: 'math' },
+  { to: '/?category=Tutorials', label: 'Tutorials', icon: 'tutorials' },
+  { to: '/shorts', label: 'Shorts', icon: 'shorts' },
+  { to: '/shorts?tab=following', label: 'Subscriptions', icon: 'subscriptions' },
+  { to: '/upload', label: 'Upload', icon: 'upload' },
+  { to: '/profile', label: 'Profile', icon: 'profile' },
+  { to: '/settings', label: 'Settings', icon: 'settings' },
+]
 
 export default function AppShell() {
   const { user, signOut } = useAuth()
-  const navigate = useNavigate()
   const location = useLocation()
-  const searchParams = new URLSearchParams(location.search)
-  const currentSearchQuery = searchParams.get('q') ?? ''
-  const currentTab = searchParams.get('tab') || 'for-you'
-  const [searchText, setSearchText] = useState(currentSearchQuery)
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const navigate = useNavigate()
+  const params = new URLSearchParams(location.search)
+  const [searchText, setSearchText] = useState(params.get('q') || '')
 
   useEffect(() => {
-    setSearchText(currentSearchQuery)
-  }, [currentSearchQuery])
+    setSearchText(new URLSearchParams(location.search).get('q') || '')
+  }, [location.search])
+
+  function handleSearch(event) {
+    event.preventDefault()
+    const query = searchText.trim()
+    navigate(query ? `/?q=${encodeURIComponent(query)}` : '/')
+  }
 
   async function handleSignOut() {
     await signOut()
-    navigate('/auth')
-  }
-
-  function handleSearchSubmit(event) {
-    event.preventDefault()
-    const params = new URLSearchParams()
-    if (currentTab && currentTab !== 'for-you') {
-      params.set('tab', currentTab)
-    }
-    if (searchText.trim()) {
-      params.set('q', searchText.trim())
-    }
-    const query = params.toString()
-    navigate(`/dashboard${query ? `?${query}` : ''}`)
+    navigate('/')
   }
 
   return (
-    <div className="theme-app-bg min-h-screen">
-      <div className="mx-auto grid min-h-screen w-full max-w-[1400px] grid-cols-1 lg:grid-cols-[280px_1fr_120px]">
-        <aside className="theme-panel hidden border-r p-4 lg:sticky lg:top-0 lg:block lg:h-screen lg:overflow-auto">
-          <Link to="/dashboard" className="brand-wordmark text-4xl font-black tracking-tight">
-            HoloStem
-          </Link>
-          <form className="mt-4" onSubmit={handleSearchSubmit}>
-            <label className="sr-only" htmlFor="app-search">Search videos and profiles</label>
-            <input
-              id="app-search"
-              value={searchText}
-              onChange={(event) => setSearchText(event.target.value)}
-              className="theme-input w-full rounded-full border px-4 py-2 text-sm"
-              placeholder="🔍 Search videos and profiles"
-              type="search"
-            />
-          </form>
-          <nav className="mt-4 space-y-1">
-            {menuItems.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) => {
-                  const itemPath = item.to.split('?')[0]
-                  const itemSearch = item.to.split('?')[1] || ''
-                  const itemTab = new URLSearchParams(itemSearch).get('tab') || 'for-you'
-                  const active = itemPath === '/dashboard'
-                    ? location.pathname === '/dashboard' && currentTab === itemTab
-                    : isActive
-                  return `flex items-center gap-3 rounded-lg px-3 py-2 text-lg font-semibold transition ${
-                    active ? 'brand-button-soft brand-accent-text' : 'hover:bg-[rgba(227,232,191,0.08)]'
-                  }`
-                }}
-              >
-                <span className="text-xl">{item.icon}</span>
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-          </nav>
+    <div className="min-h-screen bg-[var(--app-bg)] text-white">
+      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b border-white/10 bg-[#0f0f0f]/95 px-4 backdrop-blur-xl sm:gap-6 lg:px-6">
+        <BrandLogo />
+        <form onSubmit={handleSearch} className="mx-auto flex w-full max-w-2xl items-center">
+          <label htmlFor="uvideo-search" className="sr-only">Search UVideo</label>
+          <input
+            id="uvideo-search"
+            type="search"
+            value={searchText}
+            onChange={(event) => setSearchText(event.target.value)}
+            placeholder="Search UVideo"
+            className="h-10 min-w-0 flex-1 rounded-l-full border border-white/15 bg-[#121212] px-4 text-sm text-white outline-none transition placeholder:text-[#888] focus:border-[#3ea6ff]"
+          />
+          <button className="grid h-10 w-12 place-items-center rounded-r-full border border-l-0 border-white/15 bg-[#222] text-[#ddd] transition hover:bg-[#303030]" aria-label="Search">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="2"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
+          </button>
+        </form>
+        <Link to="/upload" className="hidden h-10 items-center gap-2 rounded-full bg-[#272727] px-4 text-sm font-bold transition hover:bg-[#3a3a3a] sm:flex">
+          <Icon name="upload" /> Upload
+        </Link>
+        <Link to={user ? '/profile' : '/auth'} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#3ea6ff] to-[#00c8ff] text-sm font-black text-[#06121a]" title={user ? 'Profile' : 'Sign in'}>
+          {(user?.user_metadata?.username || user?.email || 'U')[0].toUpperCase()}
+        </Link>
+      </header>
 
-          {user ? (
-            <button
-              onClick={handleSignOut}
-              className="brand-outline mt-4 w-full rounded-lg border px-3 py-2 text-left text-sm hover:bg-[rgba(227,232,191,0.08)]"
-            >
-              Logout {user?.email ? `(${user.email})` : ''}
-            </button>
+      <aside className="fixed bottom-0 left-0 top-16 z-40 hidden w-60 flex-col border-r border-white/10 bg-[#0f0f0f] p-3 lg:flex">
+        <nav className="space-y-1" aria-label="Main navigation">
+          {navigation.map((item) => item.href ? (
+            <a key={item.label} href={item.href} className="flex items-center gap-4 rounded-xl px-3 py-2.5 text-sm font-medium text-[#ddd] transition hover:bg-[#272727] hover:text-white">
+              <Icon name={item.icon} /> {item.label}
+            </a>
           ) : (
-            <NavLink
-              to="/auth"
-              className="brand-outline mt-4 block w-full rounded-lg border px-3 py-2 text-left text-sm hover:bg-[rgba(227,232,191,0.08)]"
-            >
-              Login / Sign up
+            <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({ isActive }) => `flex items-center gap-4 rounded-xl px-3 py-2.5 text-sm font-medium transition ${isActive ? 'bg-[#272727] text-white' : 'text-[#ddd] hover:bg-[#272727] hover:text-white'}`}>
+              <Icon name={item.icon} /> {item.label}
             </NavLink>
+          ))}
+        </nav>
+        <div className="mt-4 border-t border-white/10 pt-4">
+          <p className="px-3 text-xs font-bold uppercase tracking-[0.18em] text-[#777]">Partners</p>
+          <a href="https://mathart.unrealcake8.site/tips/" className="mt-2 block rounded-xl px-3 py-2 text-sm text-[#aaa] hover:bg-[#272727] hover:text-white">MathArt Tips ↗</a>
+        </div>
+        <div className="mt-auto border-t border-white/10 px-3 pt-4">
+          <p className="text-xs leading-relaxed text-[#777]">Videos for creators, coders, and MathArt makers.</p>
+          {user ? (
+            <button onClick={handleSignOut} className="mt-3 text-xs font-semibold text-[#aaa] hover:text-white">Sign out</button>
+          ) : (
+            <Link to="/auth" className="mt-3 inline-block rounded-full border border-[#3ea6ff] px-4 py-2 text-xs font-bold text-[#3ea6ff] hover:bg-[#3ea6ff]/10">Sign in</Link>
           )}
+        </div>
+      </aside>
 
-          <SuggestedAccounts />
-        </aside>
+      <main className="min-h-screen pb-20 pt-16 lg:ml-60 lg:pb-0">
+        <Outlet />
+      </main>
 
-        <main className="pb-20 lg:pb-0">
-          <section className={`mobile-shell-top fixed inset-x-0 top-0 z-40 flex h-16 items-center justify-between px-4 text-[var(--brand-cream)] lg:hidden ${location.pathname === '/dashboard' && currentTab === 'for-you' ? 'bg-transparent' : 'bg-[var(--brand-black)]'}`}>
-            {location.pathname === '/dashboard' && currentTab === 'activity' ? (
-              <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-extrabold">Inbox</h1>
-            ) : location.pathname === '/dashboard' ? (
-              <div className="flex w-full items-center justify-around pr-12 text-base font-bold text-[rgba(227,232,191,0.65)] drop-shadow-[0_2px_3px_rgba(0,0,0,0.7)]">
-                <Link to="/dashboard?tab=explore" className={currentTab === 'explore' ? 'text-[var(--brand-cream)]' : ''}>Explore</Link>
-                <Link to="/dashboard" className={`relative ${currentTab === 'for-you' ? 'text-[var(--brand-cream)]' : ''}`}>
-                  For You
-                  {currentTab === 'for-you' && <span className="absolute -bottom-3 left-1/2 h-1 w-9 -translate-x-1/2 rounded-full bg-[var(--brand-cream)]" />}
-                </Link>
-              </div>
-            ) : location.pathname === '/profile' || location.pathname.startsWith('/u/') ? (
-              <h1 className="absolute left-1/2 -translate-x-1/2 text-2xl font-extrabold">Profile</h1>
-            ) : (
-              <Link to="/dashboard" className="brand-wordmark text-2xl font-black tracking-tight">HoloStem</Link>
-            )}
-            {location.pathname === '/dashboard' ? (
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen((open) => !open)}
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobile-search-panel"
-                className="absolute right-3 top-4 text-2xl leading-none text-[var(--brand-cream)]"
-              >
-                ⌕
-              </button>
-            ) : user ? (
-              <button
-                type="button"
-                onClick={handleSignOut}
-                className="absolute right-3 top-4 rounded-full border border-[rgba(227,232,191,0.25)] px-3 py-1 text-xs font-bold text-[var(--brand-cream)]"
-              >
-                Logout
-              </button>
-            ) : null}
-            {mobileMenuOpen && (
-              <form
-                id="mobile-search-panel"
-                onSubmit={(event) => { handleSearchSubmit(event); setMobileMenuOpen(false) }}
-                className="absolute left-3 right-3 top-16 rounded-2xl bg-[rgba(18,24,13,0.97)] p-3 shadow-2xl"
-              >
-                <label className="sr-only" htmlFor="app-search-mobile">Search videos and profiles</label>
-                <input
-                  id="app-search-mobile"
-                  value={searchText}
-                  onChange={(event) => setSearchText(event.target.value)}
-                  className="w-full rounded-full border border-[rgba(227,232,191,0.16)] bg-[rgba(227,232,191,0.10)] px-4 py-2 text-sm text-[var(--brand-cream)] placeholder:text-[rgba(227,232,191,0.5)]"
-                  placeholder="Search videos and profiles"
-                  type="search"
-                />
-              </form>
-            )}
-          </section>
-          <Outlet />
-        </main>
-      </div>
-
-      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-[rgba(227,232,191,0.16)] bg-[var(--brand-black)] px-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 text-[var(--brand-cream)] lg:hidden">
-        <ul className="grid grid-cols-5 items-end gap-1">
-          {mobileNavItems.map((item) => {
-            const itemSearch = item.to.split('?')[1] || ''
-            const targetTab = new URLSearchParams(itemSearch).get('tab') || 'for-you'
-            const active = item.to === '/upload'
-              ? location.pathname === '/upload'
-              : item.to === '/profile'
-                ? location.pathname === '/profile' || location.pathname.startsWith('/u/')
-                : location.pathname === '/dashboard' && currentTab === targetTab
-            return (
-              <li key={item.to}>
-                <NavLink
-                  to={item.to}
-                  className={`flex flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 text-[11px] font-bold ${
-                    active ? 'text-[var(--brand-cream)]' : 'text-[rgba(227,232,191,0.55)]'
-                  }`}
-                >
-                  {item.label === 'Create' ? (
-                    <span className="brand-plus relative mb-0.5 grid h-8 w-12 place-items-center rounded-xl text-3xl font-black leading-none">+</span>
-                  ) : (
-                    <img
-                      src={`${navIconBaseUrl}/${item.iconFileName}`}
-                      alt=""
-                      aria-hidden="true"
-                      className="h-7 w-7 object-contain"
-                    />
-                  )}
-                  <span>{item.label === 'Create' ? '' : item.label}</span>
-                </NavLink>
-              </li>
-            )
-          })}
-        </ul>
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-white/10 bg-[#0f0f0f]/98 lg:hidden" aria-label="Mobile navigation">
+        {navigation.filter((item) => ['Home', 'Shorts', 'Upload', 'Profile', 'Settings'].includes(item.label)).map((item) => (
+          <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({ isActive }) => `flex flex-col items-center justify-center gap-1 text-[10px] ${isActive ? 'text-[#3ea6ff]' : 'text-[#aaa]'}`}>
+            <Icon name={item.icon} /><span>{item.label}</span>
+          </NavLink>
+        ))}
       </nav>
     </div>
   )

@@ -6,6 +6,7 @@ import { applyUiSettings, readUiSettings } from './lib/uiSettings'
 import AuthPage from './pages/AuthPage'
 import ContentViewerPage from './pages/ContentViewerPage'
 import DashboardPage from './pages/DashboardPage'
+import HomePage from './pages/HomePage'
 import ProfilePage from './pages/ProfilePage'
 import PublicProfilePage from './pages/PublicProfilePage'
 import SettingsPage from './pages/SettingsPage'
@@ -22,8 +23,9 @@ export default function App() {
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/" element={<AppShell />}>
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route index element={<HomePage />} />
+        <Route path="dashboard" element={<Navigate to="/" replace />} />
+        <Route path="shorts" element={<DashboardPage />} />
         <Route path="content/:id" element={<ContentViewerPage />} />
         <Route path="u/:username" element={<PublicProfilePage />} />
         <Route path="/video/:id" element={<VideoPage />} />
@@ -60,7 +62,7 @@ export default function App() {
           )}
         />
       </Route>
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }

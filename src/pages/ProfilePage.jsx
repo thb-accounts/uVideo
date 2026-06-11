@@ -220,11 +220,11 @@ export default function ProfilePage() {
           <div className="mt-6 grid w-full max-w-sm grid-cols-3 divide-x divide-white/10">
             <button type="button" onClick={() => setActiveSocialList((current) => (current === 'following' ? '' : 'following'))}>
               <p className="text-3xl font-black">{followingCount}</p>
-              <p className="text-lg text-white/55">Following</p>
+              <p className="text-lg text-white/55">Subscriptions</p>
             </button>
             <button type="button" onClick={() => setActiveSocialList((current) => (current === 'followers' ? '' : 'followers'))}>
               <p className="text-3xl font-black">{followersCount}</p>
-              <p className="text-lg text-white/55">Followers</p>
+              <p className="text-lg text-white/55">Subscribers</p>
             </button>
             <div>
               <p className="text-3xl font-black">{totalLikes}</p>
@@ -233,10 +233,10 @@ export default function ProfilePage() {
           </div>
           {profile.bio ? <p className="mt-5 text-xl">{profile.bio}</p> : <p className="mt-5 text-base text-white/45">No bio yet.</p>}
           {activeSocialList === 'following' && (
-            <SocialAccountList title="Following" entries={following} idKey="following_id" emptyMessage="Not following anyone yet." />
+            <SocialAccountList title="Subscriptions" entries={following} idKey="following_id" emptyMessage="No subscriptions yet." />
           )}
           {activeSocialList === 'followers' && (
-            <SocialAccountList title="Followers" entries={followers} idKey="follower_id" emptyMessage="No followers yet." />
+            <SocialAccountList title="Subscribers" entries={followers} idKey="follower_id" emptyMessage="No subscribers yet." />
           )}
         </div>
         <div className="mt-8 grid grid-cols-5 items-end border-b border-white/20 text-white/55">
@@ -340,8 +340,8 @@ export default function ProfilePage() {
       </div>
       <section className="theme-card hidden rounded-xl border p-4 lg:block">
         <div className="flex gap-6 text-sm text-white">
-          <button type="button" onClick={() => setActiveSocialList('followers')}><span className="font-bold">{followersCount}</span> followers</button>
-          <button type="button" onClick={() => setActiveSocialList('following')}><span className="font-bold">{followingCount}</span> following</button>
+          <button type="button" onClick={() => setActiveSocialList('followers')}><span className="font-bold">{followersCount}</span> subscribers</button>
+          <button type="button" onClick={() => setActiveSocialList('following')}><span className="font-bold">{followingCount}</span> subscriptions</button>
         </div>
       </section>
       <form className="theme-card hidden space-y-3 rounded-xl border p-4 lg:block" onSubmit={handleSubmit}>
@@ -388,18 +388,18 @@ export default function ProfilePage() {
       )}
       <section className="hidden gap-3 md:grid-cols-2 lg:grid">
         <div className="theme-card rounded-xl border p-4">
-          <p className="mb-2 text-sm text-slate-300">Followers</p>
+          <p className="mb-2 text-sm text-slate-300">Subscribers</p>
           <div className="space-y-1 text-sm text-slate-200">
-            {followers.length === 0 && <p className="text-slate-400">No followers yet.</p>}
+            {followers.length === 0 && <p className="text-slate-400">No subscribers yet.</p>}
             {followers.slice(0, 10).map((entry) => (
               <Link key={entry.follower_id} to={`/u/${entry.profiles?.username || 'user'}`} className="block hover:text-white">@{entry.profiles?.username || 'user'}</Link>
             ))}
           </div>
         </div>
         <div className="theme-card rounded-xl border p-4">
-          <p className="mb-2 text-sm text-slate-300">Following</p>
+          <p className="mb-2 text-sm text-slate-300">Subscriptions</p>
           <div className="space-y-1 text-sm text-slate-200">
-            {following.length === 0 && <p className="text-slate-400">Not following anyone yet.</p>}
+            {following.length === 0 && <p className="text-slate-400">No subscriptions yet.</p>}
             {following.slice(0, 10).map((entry) => (
               <Link key={entry.following_id} to={`/u/${entry.profiles?.username || 'user'}`} className="block hover:text-white">@{entry.profiles?.username || 'user'}</Link>
             ))}

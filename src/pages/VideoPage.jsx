@@ -1,364 +1,146 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import {
-  fetchContentById,
-  getProfile,
-  fetchLikeStatus,
-  likeContent,
-  unlikeContent,
-  fetchComments,
-  addComment,
-  deleteComment,
-  deleteContent,
+  addComment, deleteComment, deleteContent, fetchComments, fetchContent,
+  fetchContentById, fetchFollowStatus, fetchLikeStatus, followUser, getProfile,
+  likeContent, unfollowUser, unlikeContent,
 } from '../lib/contentApi'
 
-function VideoPlayer({ item }) {
-  const videoRef = useRef(null)
-  const mediaUrl = item.media_url
-  const isYoutube =
-    mediaUrl?.includes('youtube.com') || mediaUrl?.includes('youtu.be')
+function embedUrl(url = '') {
+  return url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
+}
 
-  if (item.type === 'mini') {
-    return (
-      <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-b from-[var(--brand-olive)] to-[var(--brand-black)] text-white">
-        <div className="text-6xl mb-4">🎮</div>
-        <p className="text-2xl font-bold">Mini Experience</p>
-      </div>
-    )
-  }
+function Player({ item }) {
+  const isYoutube = item.media_url?.includes('youtube.com') || item.media_url?.includes('youtu.be')
+  if (isYoutube) return <iframe title={item.title} src={`${embedUrl(item.media_url)}?controls=1`} className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
+  if (item.media_url) return <video src={item.media_url} className="h-full w-full bg-black object-contain" controls playsInline />
+  return <div className="grid h-full place-items-center bg-gradient-to-br from-[#102838] via-[#102a43] to-[#07191f] p-8 text-center"><div><span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#3ea6ff] text-2xl font-black text-[#06131c]">U</span><p className="mt-4 text-lg font-bold">{item.title}</p><p className="mt-2 text-sm text-[#aaa]">This creator preview is coming soon.</p></div></div>
+}
 
-  if (isYoutube) {
-    const embedUrl = mediaUrl
-      .replace('watch?v=', 'embed/')
-      .replace('youtu.be/', 'youtube.com/embed/')
-    return (
-      <iframe
-        title={item.title}
-        src={`${embedUrl}?autoplay=1&controls=1`}
-        className="h-full w-full"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    )
-  }
-
-  if (mediaUrl) {
-    return (
-      <video
-        ref={videoRef}
-        src={mediaUrl}
-        className="h-full w-full object-contain bg-black"
-        controls
-        autoPlay
-        loop
-        playsInline
-      />
-    )
-  }
-
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-slate-900 text-white px-8 text-center">
-      <div className="text-5xl mb-4">📚</div>
-      <p className="text-xl font-bold">{item.title}</p>
-      <p className="mt-2 text-white/60 text-sm">{item.description}</p>
-    </div>
-  )
+function Recommendation({ item }) {
+  return <Link to={`/video/${item.id}`} className="group grid grid-cols-[150px_1fr] gap-3"><div className="aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-[#16324a] to-[#087ea4]"><div className="grid h-full place-items-center text-xl font-black text-white/80">U</div></div><div className="min-w-0"><h3 className="line-clamp-2 text-sm font-bold leading-5 group-hover:text-[#8ed0ff]">{item.title}</h3><p className="mt-1 truncate text-xs text-[#aaa]">@{item.username || 'uvideo'}</p><p className="text-xs text-[#777]">{item.views || 0} views</p></div></Link>
 }
 
 export default function VideoPage() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-
   const [item, setItem] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
+  const [catalog, setCatalog] = useState([])
   const [comments, setComments] = useState([])
+  const [avatarUrl, setAvatarUrl] = useState('')
+  const [liked, setLiked] = useState(false)
+  const [subscribed, setSubscribed] = useState(false)
+  const [likeCount, setLikeCount] = useState(0)
   const [body, setBody] = useState('')
   const [posting, setPosting] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [avatarUrl, setAvatarUrl] = useState('')
-  const bottomRef = useRef(null)
 
-  const isOwner = user && item?.user_id && user.id === item.user_id
+  const isOwner = Boolean(user?.id && item?.user_id === user.id)
+  const recommendations = useMemo(() => catalog.filter((video) => video.id !== id).slice(0, 8), [catalog, id])
 
   useEffect(() => {
-    async function load() {
-      setLoading(true)
-      const [content, commentsData] = await Promise.all([
-        fetchContentById(id),
-        fetchComments(id),
-      ])
+    let cancelled = false
+    setLoading(true)
+    Promise.all([fetchContentById(id), fetchComments(id), fetchContent()]).then(async ([content, commentsData, contentData]) => {
+      if (cancelled) return
       setItem(content)
-      setLikeCount(content?.like_count ?? 0)
-      setComments(commentsData)
+      setComments(commentsData || [])
+      setCatalog(contentData || [])
+      setLikeCount(content?.like_count || 0)
       if (content?.user_id) {
         const profile = await getProfile(content.user_id)
-        setAvatarUrl(profile?.avatar_url || '')
-      } else {
-        setAvatarUrl('')
+        if (!cancelled) setAvatarUrl(profile?.avatar_url || '')
       }
-      setLoading(false)
-    }
-    load()
+    }).finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [id])
 
   useEffect(() => {
-    if (!user?.id || !id) return
+    if (!user?.id || !item) return
     fetchLikeStatus(user.id, id).then(setLiked)
-  }, [user?.id, id])
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [comments])
+    if (item.user_id && item.user_id !== user.id) fetchFollowStatus(user.id, item.user_id).then(setSubscribed)
+  }, [user?.id, item, id])
 
   async function handleLike() {
-    if (!user) { navigate('/auth'); return }
-    const nowLiked = !liked
-    setLiked(nowLiked)
-    setLikeCount((prev) => (nowLiked ? prev + 1 : Math.max(prev - 1, 0)))
-    if (nowLiked) await likeContent(user.id, id)
-    else await unlikeContent(user.id, id)
+    if (!user) return navigate('/auth')
+    const next = !liked
+    setLiked(next)
+    setLikeCount((count) => next ? count + 1 : Math.max(0, count - 1))
+    if (next) await likeContent(user.id, id); else await unlikeContent(user.id, id)
   }
 
-  async function handlePost(e) {
-    e.preventDefault()
+  async function handleSubscribe() {
+    if (!user) return navigate('/auth')
+    if (!item.user_id || isOwner) return
+    const next = !subscribed
+    setSubscribed(next)
+    if (next) await followUser(user.id, item.user_id); else await unfollowUser(user.id, item.user_id)
+  }
+
+  async function handlePost(event) {
+    event.preventDefault()
     if (!body.trim() || !user) return
     setPosting(true)
     try {
-      const newComment = await addComment({
-        userId: user.id,
-        contentId: id,
-        username: user.user_metadata?.username || user.email?.split('@')[0] || 'anon',
-        body: body.trim(),
-      })
-      setComments((prev) => [...prev, newComment])
+      const comment = await addComment({ userId: user.id, contentId: id, username: user.user_metadata?.username || user.email?.split('@')[0] || 'creator', body: body.trim() })
+      setComments((current) => [...current, comment])
       setBody('')
-    } finally {
-      setPosting(false)
-    }
-  }
-
-  async function handleDeleteComment(commentId) {
-    await deleteComment(commentId)
-    setComments((prev) => prev.filter((c) => c.id !== commentId))
+    } finally { setPosting(false) }
   }
 
   async function handleDelete() {
     setDeleting(true)
-    try {
-      await deleteContent(id)
-      navigate('/dashboard')
-    } catch (err) {
-      console.error('Delete failed:', err)
-      setDeleting(false)
-    }
+    try { await deleteContent(id); navigate('/') } catch { setDeleting(false) }
   }
 
   function handleShare() {
-    const url = window.location.href
-    if (navigator.share) navigator.share({ title: item?.title, url }).catch(() => {})
-    else navigator.clipboard.writeText(url)
+    if (navigator.share) navigator.share({ title: item.title, url: window.location.href }).catch(() => {})
+    else navigator.clipboard.writeText(window.location.href)
   }
 
-  if (loading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-black">
-        <div className="h-10 w-10 rounded-full border-4 border-[var(--brand-sage)] border-t-transparent animate-spin" />
-      </div>
-    )
-  }
-
-  if (!item) {
-    return (
-      <div className="flex h-screen flex-col items-center justify-center bg-black text-white gap-4">
-        <p className="text-xl">Video not found.</p>
-        <Link to="/dashboard" className="text-[var(--brand-sage)] underline">Back to feed</Link>
-      </div>
-    )
-  }
+  if (loading) return <div className="grid min-h-[70vh] place-items-center"><div className="h-10 w-10 animate-spin rounded-full border-4 border-[#3ea6ff] border-t-transparent" /></div>
+  if (!item) return <div className="grid min-h-[70vh] place-items-center text-center"><div><p className="text-xl font-bold">Video not found.</p><Link to="/" className="mt-3 inline-block text-[#3ea6ff]">Return home</Link></div></div>
 
   return (
-    <div className="p-4 min-h-screen bg-[#0f0f0f] text-white">
-      {/* Back nav */}
-      <div className="sticky top-0 z-10 flex items-center gap-3 bg-black/80 backdrop-blur px-4 py-3 border-b border-white/10">
-        <button
-          onClick={() => navigate(-1)}
-          className="text-white/70 hover:text-white text-sm flex items-center gap-1"
-        >
-          ← Back
-        </button>
-        <p className="text-sm font-semibold text-white/80 line-clamp-1 flex-1">{item.title}</p>
-        {isOwner && (
-          <button
-            onClick={() => setShowDeleteModal(true)}
-            className="rounded-full bg-red-500/20 border border-red-500/40 px-3 py-1 text-red-400 text-xs font-semibold hover:bg-red-500/30"
-          >
-            🗑 Delete
-          </button>
-        )}
-      </div>
-
-      <div className="mx-auto max-w-2xl">
-        {/* Video */}
-        <div className="w-full bg-black" style={{ aspectRatio: '9/16', maxHeight: '80vh' }}>
-          <VideoPlayer item={item} />
-        </div>
-
-        {/* Info + actions */}
-        <div className="px-4 pt-4 pb-2">
-          {item.username && (
-            <Link
-              to={`/u/${item.username}`}
-              className="inline-flex items-center gap-2 mb-2 hover:underline"
-            >
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt={`${item.username} avatar`}
-                  className="h-8 w-8 rounded-full object-cover"
-                />
-              ) : (
-                <span className="h-8 w-8 rounded-full bg-gradient-to-br from-[var(--brand-olive)] to-[var(--brand-sage)] flex items-center justify-center text-xs font-bold">
-                  {item.username[0].toUpperCase()}
-                </span>
-              )}
-              <span className="font-semibold text-base">@{item.username}</span>
+    <div className="mx-auto grid max-w-[1500px] gap-8 p-4 sm:p-6 xl:grid-cols-[minmax(0,1fr)_390px]">
+      <div className="min-w-0">
+        <div className="aspect-video overflow-hidden rounded-xl bg-black shadow-2xl"><Player item={item} /></div>
+        <h1 className="mt-4 text-xl font-black leading-tight sm:text-2xl">{item.title}</h1>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <Link to={item.username ? `/u/${item.username}` : '#'} className="flex min-w-0 items-center gap-3">
+              {avatarUrl ? <img src={avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#3ea6ff] to-[#00c8ff] font-black text-[#06131c]">{(item.username || 'U')[0].toUpperCase()}</span>}
+              <span className="min-w-0"><strong className="block truncate text-sm">{item.username || 'UVideo creator'}</strong><small className="text-[#888]">Creator channel</small></span>
             </Link>
-          )}
-          <h1 className="text-xl font-bold leading-snug">{item.title}</h1>
-          {item.description && (
-            <p className="mt-1 text-white/60 text-sm leading-relaxed">{item.description}</p>
-          )}
-          <div className="mt-2 flex items-center gap-2">
-            <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs capitalize">
-              {item.type}
-            </span>
-            {item.category && (
-              <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-xs">
-                {item.category}
-              </span>
-            )}
+            {!isOwner && item.user_id && <button onClick={handleSubscribe} className={`rounded-full px-5 py-2 text-sm font-black transition ${subscribed ? 'bg-[#272727] text-white hover:bg-[#383838]' : 'bg-white text-black hover:bg-[#ddd]'}`}>{subscribed ? 'Subscribed' : 'Subscribe'}</button>}
           </div>
-
-          {/* Like / Share row */}
-          <div className="mt-4 flex items-center gap-4 border-t border-white/10 pt-4">
-            <button
-              onClick={handleLike}
-              className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15 transition"
-            >
-              <span className="text-xl">{liked ? '❤️' : '🤍'}</span>
-              {likeCount} {likeCount === 1 ? 'Like' : 'Likes'}
-            </button>
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 text-sm font-semibold hover:bg-white/15 transition"
-            >
-              <span className="text-xl">↗️</span>
-              Share
-            </button>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={handleLike} className={`rounded-full px-4 py-2 text-sm font-bold transition ${liked ? 'bg-[#3ea6ff] text-[#06131c]' : 'bg-[#272727] hover:bg-[#383838]'}`}>{liked ? '♥' : '♡'} {likeCount}</button>
+            <a href="#comments" className="rounded-full bg-[#272727] px-4 py-2 text-sm font-bold hover:bg-[#383838]">Comment · {comments.length}</a>
+            <button onClick={handleShare} className="rounded-full bg-[#272727] px-4 py-2 text-sm font-bold hover:bg-[#383838]">↗ Share</button>
+            {isOwner && <button onClick={() => setShowDeleteModal(true)} className="rounded-full bg-red-500/15 px-4 py-2 text-sm font-bold text-red-300 hover:bg-red-500/25">Delete</button>}
           </div>
         </div>
 
-        {/* Comments */}
-        <div className="px-4 pb-24 mt-2 border-t border-white/10">
-          <h2 className="py-3 font-semibold text-base">{comments.length} Comments</h2>
-
-          <div className="space-y-4">
-            {comments.length === 0 && (
-              <p className="text-white/30 text-sm text-center py-6">
-                No comments yet. Be the first!
-              </p>
-            )}
-            {comments.map((c) => (
-              <div key={c.id} className="flex gap-3 items-start">
-                <div className="h-8 w-8 flex-shrink-0 rounded-full bg-gradient-to-br from-[var(--brand-olive)] to-[var(--brand-sage)] flex items-center justify-center text-white text-xs font-bold">
-                  {(c.username || '?')[0].toUpperCase()}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white/60 text-xs font-semibold mb-0.5">@{c.username}</p>
-                  <p className="text-white text-sm leading-snug break-words">{c.body}</p>
-                  <p className="text-white/25 text-xs mt-1">
-                    {new Date(c.created_at).toLocaleDateString()}
-                  </p>
-                </div>
-                {user?.id === c.user_id && (
-                  <button
-                    onClick={() => handleDeleteComment(c.id)}
-                    className="text-white/25 hover:text-red-400 text-xs flex-shrink-0 mt-1"
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-            ))}
-            <div ref={bottomRef} />
-          </div>
-
-          {/* Comment input */}
-          <div className="fixed bottom-0 left-0 right-0 bg-[#0f0f0f]/95 backdrop-blur border-t border-white/10 px-4 py-3">
-            <div className="mx-auto max-w-2xl">
-              {user ? (
-                <form onSubmit={handlePost} className="flex gap-2">
-                  <input
-                    value={body}
-                    onChange={(e) => setBody(e.target.value)}
-                    placeholder="Add a comment…"
-                    className="flex-1 rounded-full bg-white/10 px-4 py-2 text-white text-sm placeholder-white/30 outline-none focus:bg-white/15"
-                  />
-                  <button
-                    type="submit"
-                    disabled={posting || !body.trim()}
-                    className="rounded-full bg-[var(--brand-olive)] px-4 py-2 text-white text-sm font-semibold disabled:opacity-40"
-                  >
-                    Post
-                  </button>
-                </form>
-              ) : (
-                <p className="text-white/40 text-sm text-center">
-                  <Link to="/auth" className="text-[var(--brand-sage)] underline">Log in</Link> to comment
-                </p>
-              )}
-            </div>
-          </div>
+        <div className="mt-5 rounded-xl bg-[#272727] p-4 text-sm">
+          <p className="font-bold">{item.views || item.view_count || 0} views · {item.category || 'Video'}</p>
+          <p className="mt-2 whitespace-pre-wrap leading-6 text-[#ddd]">{item.description || 'A video from the UVideo creator community.'}</p>
         </div>
+
+        <section id="comments" className="mt-7 scroll-mt-24">
+          <h2 className="text-lg font-black">{comments.length} Comments</h2>
+          {user ? <form onSubmit={handlePost} className="mt-4 flex gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#3ea6ff] text-xs font-black text-black">{(user.email || 'U')[0].toUpperCase()}</span><input value={body} onChange={(event) => setBody(event.target.value)} placeholder="Add a comment" className="min-w-0 flex-1 border-b border-white/20 bg-transparent px-1 py-2 text-sm outline-none focus:border-[#3ea6ff]"/><button disabled={posting || !body.trim()} className="rounded-full bg-[#3ea6ff] px-4 text-sm font-black text-[#06131c] disabled:opacity-40">Comment</button></form> : <p className="mt-3 text-sm text-[#aaa]"><Link to="/auth" className="text-[#3ea6ff]">Sign in</Link> to join the conversation.</p>}
+          <div className="mt-6 space-y-6">{comments.map((comment) => <div key={comment.id} className="flex gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#24485d] text-xs font-black">{(comment.username || 'U')[0].toUpperCase()}</span><div className="min-w-0 flex-1"><p className="text-xs font-bold">@{comment.username || 'creator'}</p><p className="mt-1 break-words text-sm leading-5 text-[#ddd]">{comment.body}</p>{user?.id === comment.user_id && <button onClick={async () => { await deleteComment(comment.id); setComments((current) => current.filter((entry) => entry.id !== comment.id)) }} className="mt-1 text-xs text-[#777] hover:text-red-300">Delete</button>}</div></div>)}</div>
+        </section>
       </div>
 
-      {/* Delete confirm modal */}
-      {showDeleteModal && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-          onClick={() => setShowDeleteModal(false)}
-        >
-          <div
-            className="bg-[#1a1a1a] rounded-2xl p-6 w-80 text-center"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-white font-bold text-lg mb-2">Delete this video?</p>
-            <p className="text-white/50 text-sm mb-5">
-              This can't be undone. The video will be removed permanently.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="flex-1 rounded-full border border-white/20 py-2 text-white text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 rounded-full bg-red-500 py-2 text-white text-sm font-semibold disabled:opacity-50"
-              >
-                {deleting ? 'Deleting…' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <aside className="space-y-4"><h2 className="text-lg font-black">Up next</h2>{recommendations.map((video) => <Recommendation key={video.id} item={video} />)}{recommendations.length === 0 && <p className="text-sm text-[#888]">More creator videos are on the way.</p>}</aside>
+
+      {showDeleteModal && <div className="fixed inset-0 z-[70] grid place-items-center bg-black/75 p-4" onClick={() => setShowDeleteModal(false)}><div className="w-full max-w-sm rounded-2xl bg-[#222] p-6" onClick={(event) => event.stopPropagation()}><h2 className="text-lg font-black">Delete this video?</h2><p className="mt-2 text-sm text-[#aaa]">This action cannot be undone.</p><div className="mt-6 flex justify-end gap-3"><button onClick={() => setShowDeleteModal(false)} className="rounded-full px-4 py-2 text-sm font-bold">Cancel</button><button onClick={handleDelete} disabled={deleting} className="rounded-full bg-red-500 px-4 py-2 text-sm font-black">{deleting ? 'Deleting…' : 'Delete'}</button></div></div></div>}
     </div>
   )
 }

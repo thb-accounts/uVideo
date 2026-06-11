@@ -213,7 +213,7 @@ export default function DashboardPage() {
       }
 
       if (tab === 'explore') {
-        const exploreOnly = browseData.filter((item) => item.username === 'holostemexplore')
+        const exploreOnly = browseData.filter((item) => item.username === 'uvideoexplore')
         const avatarMap = await fetchProfileAvatarsByUserIds(exploreOnly.map((item) => item.user_id))
         if (!cancelled) setFeed(exploreOnly.map((item) => ({ ...item, avatar_url: avatarMap[item.user_id] || '' })))
         return
@@ -311,7 +311,7 @@ export default function DashboardPage() {
     if (nextTab === 'for-you') params.delete('tab')
     else params.set('tab', nextTab)
     const query = params.toString()
-    navigate(`/dashboard${query ? `?${query}` : ''}`)
+    navigate(`/shorts${query ? `?${query}` : ''}`)
   }
 
   function cycleMode(direction) {
@@ -356,7 +356,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-black">
+      <div className="flex h-[calc(100dvh-4rem)] w-full items-center justify-center bg-black">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 rounded-full border-4 brand-spinner animate-spin" />
           <p className="text-[rgba(227,232,191,0.62)] text-sm">Loading feed…</p>
@@ -378,33 +378,33 @@ export default function DashboardPage() {
     ]
     const activityRows = [
       {
-        id: 'followers',
+        id: 'subscribers',
         icon: '♟',
-        title: 'New followers',
+        title: 'New subscribers',
         body: notifications[0]?.profiles?.username
-          ? `${notifications[0].profiles.username} started following you.`
-          : 'No new followers yet.',
+          ? `${notifications[0].profiles.username} subscribed to you.`
+          : 'No new subscribers yet.',
       },
       {
         id: 'activity',
         icon: '♥',
         title: 'Activity',
         body: notifications.length
-          ? `${notifications.length} recent follow ${notifications.length === 1 ? 'notification' : 'notifications'}.`
-          : 'Follower activity will appear here.',
+          ? `${notifications.length} recent subscription ${notifications.length === 1 ? 'notification' : 'notifications'}.`
+          : 'Subscriber activity will appear here.',
       },
     ]
-    const visibleNotifications = activityView === 'activity' || activityView === 'followers' || activityView === 'inbox' ? notifications : []
+    const visibleNotifications = activityView === 'activity' || activityView === 'subscribers' || activityView === 'inbox' ? notifications : []
 
     return (
       <div className="theme-app-bg mx-auto max-w-2xl p-4 pt-20 lg:p-4">
         <section className="hidden theme-card rounded-2xl border p-4 lg:block">
           <h1 className="brand-accent-text text-2xl font-bold">Activity</h1>
-          <p className="mt-1 text-sm theme-muted">Recent follows</p>
+          <p className="mt-1 text-sm theme-muted">Recent subscriptions</p>
           {loadError && <p className="mt-3 rounded-xl brand-error p-3 text-sm">{loadError}</p>}
           <div className="mt-4 space-y-3">
             {notifications.length === 0 && (
-              <p className="text-sm theme-muted">No one has followed you yet.</p>
+              <p className="text-sm theme-muted">No one has subscribed yet.</p>
             )}
             {notifications.map((notification) => (
               <div
@@ -415,7 +415,7 @@ export default function DashboardPage() {
                   <span className="font-semibold">
                     @{notification.profiles?.username || 'user'}
                   </span>{' '}
-                  started following you.
+                  subscribed to you.
                 </p>
                 <p className="mt-1 text-xs theme-muted">
                   {new Date(notification.created_at).toLocaleString()}
@@ -425,11 +425,11 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="-mx-4 -mt-20 min-h-screen brand-surface-mobile pb-28 pt-20 lg:hidden">
+        <section className="-mx-4 -mt-20 min-h-[calc(100dvh-4rem)] brand-surface-mobile pb-28 pt-20 lg:hidden">
           {loadError && <p className="mx-4 mb-4 rounded-xl brand-error p-3 text-sm">{loadError}</p>}
           <div className="flex gap-4 overflow-x-auto px-4 pb-5 pt-3" style={{ scrollbarWidth: 'none' }}>
             {storyProfiles.length === 0 ? (
-              <div className="py-3 text-sm text-white/45">Follow creators to see their updates here.</div>
+              <div className="py-3 text-sm text-white/45">Subscribe to creators to see their updates here.</div>
             ) : storyProfiles.map((profile) => (
               <Link
                 key={`${profile.isCreate ? 'create' : 'story'}-${profile.id || profile.username}`}
@@ -453,10 +453,10 @@ export default function DashboardPage() {
             {activityRows.map((row) => (
               <Link
                 key={row.id}
-                to={`/dashboard?tab=activity&view=${row.id}`}
+                to={`/shorts?tab=activity&view=${row.id}`}
                 className={`flex items-center gap-3 rounded-2xl p-2 transition ${activityView === row.id ? 'bg-white/10' : 'hover:bg-white/5'}`}
               >
-                <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-full ${row.id === 'followers' ? 'brand-activity-icon' : 'brand-activity-icon-alt'} text-2xl`}>{row.icon}</div>
+                <div className={`grid h-14 w-14 shrink-0 place-items-center rounded-full ${row.id === 'subscribers' ? 'brand-activity-icon' : 'brand-activity-icon-alt'} text-2xl`}>{row.icon}</div>
                 <div className="min-w-0 flex-1">
                   <p className="text-lg font-medium">{row.title}</p>
                   <p className="truncate text-base text-white/55">{row.body}</p>
@@ -471,7 +471,7 @@ export default function DashboardPage() {
               {visibleNotifications.map((notification) => (
                 <Link
                   key={`${notification.follower_id}-${notification.created_at}`}
-                  to={notification.profiles?.username ? `/u/${notification.profiles.username}` : '/dashboard?tab=activity'}
+                  to={notification.profiles?.username ? `/u/${notification.profiles.username}` : '/shorts?tab=activity'}
                   className="flex items-center gap-3 rounded-xl p-2 hover:bg-white/5"
                 >
                   {notification.profiles?.avatar_url ? (
@@ -482,7 +482,7 @@ export default function DashboardPage() {
                     </span>
                   )}
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold">@{notification.profiles?.username || 'user'} started following you.</p>
+                    <p className="truncate text-sm font-semibold">@{notification.profiles?.username || 'user'} subscribed to you.</p>
                     <p className="text-xs text-white/45">{new Date(notification.created_at).toLocaleString()}</p>
                   </div>
                 </Link>
@@ -496,19 +496,19 @@ export default function DashboardPage() {
 
   if (feed.length === 0) {
     return (
-      <div className="flex h-screen w-full flex-col items-center justify-center bg-[var(--brand-black)] text-[var(--brand-cream)] gap-4">
+      <div className="flex h-[calc(100dvh-4rem)] w-full flex-col items-center justify-center bg-[var(--brand-black)] text-[var(--brand-cream)] gap-4">
         <div className="text-4xl">📭</div>
         <SearchProfileResults profiles={profileResults} searchQuery={searchQuery} />
         {loadError && <p className="max-w-xs rounded-xl brand-error p-3 text-center text-sm">{loadError}</p>}
         <p className="max-w-xs text-center text-xl font-semibold">
           {tab === 'following'
-            ? (searchQuery ? 'No matching posts from people you follow yet' : 'No posts from people you follow yet')
+            ? (searchQuery ? 'No matching posts from channels you subscribe to yet' : 'No posts from channels you subscribe to yet')
             : tab === 'explore'
-              ? (searchQuery ? 'No matching explore posts yet from @holostemexplore' : 'No explore posts yet from @holostemexplore')
+              ? (searchQuery ? 'No matching explore posts yet from @uvideoexplore' : 'No explore posts yet from @uvideoexplore')
               : (searchQuery ? 'No videos matched your search' : 'No content yet')}
         </p>
         {tab === 'following' || tab === 'explore' ? (
-          <Link to="/dashboard" className="rounded-full brand-button px-6 py-2 font-semibold">
+          <Link to="/shorts" className="rounded-full brand-button px-6 py-2 font-semibold">
             Browse For You feed
           </Link>
         ) : (
@@ -544,14 +544,14 @@ export default function DashboardPage() {
         onClick={() => cycleMode(1)}
         className="fixed left-1/2 top-3 z-30 hidden -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur lg:block"
       >
-        {tab === 'for-you' ? 'For You' : tab === 'following' ? 'Following' : 'Explore'} · Swipe ↔
+        {tab === 'for-you' ? 'For You' : tab === 'following' ? 'Subscriptions' : 'Explore'} · Swipe ↔
       </button>
 
       <div
         ref={containerRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="h-screen overflow-y-scroll snap-y snap-mandatory bg-[var(--brand-black)]"
+        className="h-[calc(100dvh-4rem)] overflow-y-scroll snap-y snap-mandatory bg-[var(--brand-black)]"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`div::-webkit-scrollbar{display:none}`}</style>
@@ -559,7 +559,7 @@ export default function DashboardPage() {
           <div
             key={item.id}
             data-feed-index={index}
-            className="h-screen w-full snap-start snap-always"
+            className="h-[calc(100dvh-4rem)] w-full snap-start snap-always"
           >
             <FeedItem
               item={item}
