@@ -4,7 +4,6 @@ import { useAuth } from '../context/useAuth'
 import {
   fetchVideosByUsername,
   getProfileByUsername,
-  getUserIdByUsername,
   fetchFollowStatus,
   followUser,
   unfollowUser,
@@ -56,6 +55,17 @@ function PublicProfileAvatar({ profile, username }) {
   )
 }
 
+function isPlayableVideoUrl(video) {
+  if (!video?.media_url || !['video', 'short'].includes(video.type)) return false
+
+  try {
+    const url = new URL(video.media_url)
+    return !/(youtube\.com|youtu\.be|vimeo\.com)$/i.test(url.hostname)
+  } catch {
+    return false
+  }
+}
+
 function VideoGrid({ videos }) {
   if (videos.length === 0) {
     return (
@@ -68,7 +78,7 @@ function VideoGrid({ videos }) {
   return (
     <div className="grid grid-cols-3 gap-px bg-black">
       {videos.map((video) => {
-        const isDirectVideo = video.media_url?.toLowerCase().endsWith('.mp4')
+        const isDirectVideo = isPlayableVideoUrl(video)
         return (
           <Link key={video.id} to={`/video/${video.id}`} className="relative aspect-[9/14] overflow-hidden bg-zinc-900">
             {isDirectVideo ? (
@@ -91,6 +101,8 @@ export default function PublicProfilePage() {
   const { username } = useParams()
   const { user } = useAuth()
   const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [videos, setVideos] = useState([])
   const [profileUserId, setProfileUserId] = useState(null)
   const [isFollowing, setIsFollowing] = useState(false)
@@ -102,7 +114,8 @@ export default function PublicProfilePage() {
   const [activeTab, setActiveTab] = useState(0)
   const isSelf = Boolean(user?.id && profileUserId && user.id === profileUserId)
   const totalLikes = videos.reduce((sum, video) => sum + Number(video.like_count || 0), 0)
-  const displayName = profile?.display_name || username || 'Creator'
+  const canonicalUsername = profile?.username || username
+  const displayName = profile?.display_name || profile?.full_name || canonicalUsername || 'Creator'
 
   const tabs = [
     { icon: '▦', label: 'Posts' },
@@ -113,17 +126,45 @@ export default function PublicProfilePage() {
   ]
 
   useEffect(() => {
+    let cancelled = false
+
     async function load() {
-      const [profileData, userId] = await Promise.all([
-        getProfileByUsername(username),
-        getUserIdByUsername(username),
-      ])
-      const videosData = await fetchVideosByUsername(profileData?.username || username, userId)
-      setProfile(profileData)
-      setVideos(videosData)
-      setProfileUserId(userId)
+      setLoading(true)
+      setLoadError('')
+      setProfile(null)
+      setVideos([])
+      setProfileUserId(null)
+      setFollowersCount(0)
+      setFollowingCount(0)
+      setFollowers([])
+      setFollowing([])
+      setIsFollowing(false)
+      setActiveSocialList('')
+
+      try {
+        const profileData = await getProfileByUsername(username)
+        const userId = profileData?.id || null
+        const videosData = profileData
+          ? await fetchVideosByUsername(profileData.username || username, userId)
+          : []
+
+        if (!cancelled) {
+          setProfile(profileData)
+          setVideos(videosData)
+          setProfileUserId(userId)
+        }
+      } catch (error) {
+        console.error('Failed to load creator profile:', error)
+        if (!cancelled) setLoadError('We could not load this creator profile. Please try again.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
     }
+
     load()
+    return () => {
+      cancelled = true
+    }
   }, [username])
 
   useEffect(() => {
@@ -163,12 +204,28 @@ export default function PublicProfilePage() {
     }
   }
 
+  if (loading) {
+    return <div className="theme-card m-4 rounded-2xl border p-8 text-center theme-muted">Loading creator profile…</div>
+  }
+
+  if (loadError || !profile) {
+    return (
+      <div className="theme-card m-4 rounded-2xl border p-8 text-center">
+        <h1 className="text-2xl font-black">Creator not available</h1>
+        <p className="mt-2 theme-muted">{loadError || `We could not find @${username}.`}</p>
+        <Link className="mt-5 inline-block rounded-full bg-[var(--brand-olive)] px-5 py-2 font-bold text-white" to="/">
+          Back to UVideo
+        </Link>
+      </div>
+    )
+  }
+
   return (
     <div className="theme-app-bg space-y-4 p-4 lg:p-4">
       <section className="-mx-4 -mt-4 min-h-screen bg-[#121212] px-4 pb-28 pt-20 text-white lg:hidden">
         <div className="flex flex-col items-center text-center">
           <div className="relative h-20 w-20 rounded-full border border-white/20 bg-[#151a17]">
-            <PublicProfileAvatar profile={profile} username={username} />
+            <PublicProfileAvatar profile={profile} username={canonicalUsername} />
           </div>
           <div className="mt-4 flex max-w-full items-center justify-center gap-2">
             <h1 className="truncate text-2xl font-black tracking-tight">{displayName}</h1>
@@ -182,7 +239,7 @@ export default function PublicProfilePage() {
               </button>
             )}
           </div>
-          <p className="text-lg text-white/55">@{username}</p>
+          <p className="text-lg text-white/55">@{canonicalUsername}</p>
           <div className="mt-6 grid w-full max-w-sm grid-cols-3 divide-x divide-white/10">
             <button type="button" onClick={() => setActiveSocialList((current) => (current === 'following' ? '' : 'following'))}>
               <p className="text-3xl font-black">{followingCount}</p>
@@ -231,11 +288,11 @@ export default function PublicProfilePage() {
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
             <div className="h-14 w-14 rounded-full">
-              <PublicProfileAvatar profile={profile} username={username} />
+              <PublicProfileAvatar profile={profile} username={canonicalUsername} />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-[var(--brand-olive)]">@{username}</h1>
-              <p className="theme-muted">{profile?.display_name || 'UVideo creator'}</p>
+              <h1 className="text-3xl font-bold text-[var(--brand-olive)]">@{canonicalUsername}</h1>
+              <p className="theme-muted">{profile?.display_name || profile?.full_name || 'UVideo creator'}</p>
               <p className="text-sm theme-muted">{profile?.bio || 'No bio yet.'}</p>
             </div>
           </div>
@@ -283,14 +340,8 @@ export default function PublicProfilePage() {
         </div>
       </section>
 
-      <section className="hidden grid-cols-1 gap-3 sm:grid-cols-2 lg:grid lg:grid-cols-3">
-        {videos.map((video) => (
-          <Link key={video.id} to={`/content/${video.id}`} className="theme-card rounded-xl border p-3 hover:bg-black/10">
-            <p className="text-xs uppercase theme-muted">{video.type}</p>
-            <p className="font-semibold">{video.title}</p>
-            <p className="text-sm theme-muted line-clamp-2">{video.description}</p>
-          </Link>
-        ))}
+      <section className="theme-card hidden overflow-hidden rounded-2xl border lg:block">
+        <VideoGrid videos={videos} />
       </section>
     </div>
   )
