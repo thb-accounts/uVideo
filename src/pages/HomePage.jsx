@@ -129,12 +129,12 @@ export default function HomePage() {
         <section className="relative mt-6 overflow-hidden rounded-2xl border border-[#3ea6ff]/20 bg-gradient-to-r from-[#111d2a] via-[#102838] to-[#07191f] p-6 sm:p-8">
           <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#00c8ff]/15 blur-3xl" />
           <div className="relative max-w-2xl">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-[#61d8ff]">Create · Learn · Share</p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Videos for creators, coders, and MathArt makers.</h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[#b9c5cc] sm:text-base">Discover visual math, practical tutorials, creative coding, and original videos from the UnrealCake8 community.</p>
+            <p className="text-xs font-black uppercase tracking-[0.24em] text-[#61d8ff]">Watch · Enjoy · Share</p>
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Videos for everyone of all ages, we'll be sure to have something for you!</h1>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-[#b9c5cc] sm:text-base">Discover visual math, practical tutorials, creative coding, and original videos on uVideo!</p>
             <div className="mt-5 flex flex-wrap gap-3">
-              <a href="https://mathart.unrealcake8.site" className="rounded-full bg-[#3ea6ff] px-5 py-2.5 text-sm font-black text-[#06131c] transition hover:bg-[#70bdff]">Explore MathArt ↗</a>
-              <a href="https://mathart.unrealcake8.site/tips/" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/15">MathArt Tips ↗</a>
+              <a href="https://mathart.unrealcake8.site" className="rounded-full bg-[#3ea6ff] px-5 py-2.5 text-sm font-black text-[#06131c] transition hover:bg-[#70bdff]">Explore MathArt, our tool to make Art. ↗</a>
+              <a href="https://mathart.unrealcake8.site/tips/" className="rounded-full bg-white/10 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-white/15">Explore the UC8 Foundation, a non-commercial foundation making things. ↗</a>
             </div>
           </div>
         </section>
