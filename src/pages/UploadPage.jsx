@@ -27,6 +27,7 @@ export default function UploadPage() {
     const title = String(formData.get('title') || '').trim()
     const description = String(formData.get('description') || '').trim()
     const category = String(formData.get('category') || 'General').trim()
+    const type = String(formData.get('type') || 'video') === 'short' ? 'short' : 'video'
     const points = Number(formData.get('points')) || 20
 
     if (!mediaUrl) {
@@ -57,7 +58,7 @@ export default function UploadPage() {
         title,
         description,
         username,
-        type: 'video',
+        type,
         media_url: mediaUrl,
         caption_url: captionUrl || null,
         category,
@@ -67,7 +68,7 @@ export default function UploadPage() {
       })
 
       form.reset()
-      setStatus('Video published! It is now live in the feed.')
+      setStatus(type === 'short' ? 'Short published! It is now live in the Shorts feed.' : 'Video published! It is now live on UVideo.')
     } catch (err) {
       const message = err instanceof Error ? err.message : "Your video should be published. This fallback message is only shown when the app cannot read the real error yet."
       console.error('Publish failed:', err)
@@ -87,9 +88,23 @@ export default function UploadPage() {
       <form className="theme-card grid gap-4 rounded-2xl border p-5 sm:p-6" onSubmit={handleSubmit}>
         <input className="theme-input rounded-xl border px-3 py-2" name="title" placeholder="Video title" required />
         <textarea className="theme-input rounded-xl border px-3 py-2" name="description" placeholder="Description" required />
+        <fieldset className="grid gap-2">
+          <legend className="text-sm font-semibold">Video format</legend>
+          <p className="text-xs theme-muted">Only uploads explicitly labelled as Shorts appear in the Shorts feed.</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label className="theme-input flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3">
+              <input name="type" type="radio" value="video" defaultChecked />
+              <span><span className="block font-semibold">Video</span><span className="block text-xs theme-muted">Publish as a standard video.</span></span>
+            </label>
+            <label className="theme-input flex cursor-pointer items-start gap-3 rounded-xl border px-3 py-3">
+              <input name="type" type="radio" value="short" />
+              <span><span className="block font-semibold">Short</span><span className="block text-xs theme-muted">Include this upload in the Shorts feed.</span></span>
+            </label>
+          </div>
+        </fieldset>
         <div className="grid gap-2 sm:grid-cols-2">
-          <select className="theme-input rounded-xl border px-3 py-2" name="category" defaultValue="MathArt"><option>MathArt</option><option>Tutorial</option><option>Coding</option><option>Desmos</option><option>Shorts</option><option>UnrealCake8</option><option>General</option></select>
-          <input className="theme-input rounded-xl border px-3 py-2" name="points" type="number" min="5" defaultValue="20" />
+          <select aria-label="Topic" className="theme-input rounded-xl border px-3 py-2" name="category" defaultValue="MathArt"><option>MathArt</option><option>Tutorial</option><option>Coding</option><option>Desmos</option><option>UnrealCake8</option><option>General</option></select>
+          <input aria-label="Points" className="theme-input rounded-xl border px-3 py-2" name="points" type="number" min="5" defaultValue="20" />
         </div>
         <label className="grid gap-1 text-sm font-semibold">
           Direct MP4 link
