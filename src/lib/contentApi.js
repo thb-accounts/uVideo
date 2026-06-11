@@ -4,7 +4,15 @@ import { hasSupabaseConfig, supabase } from './supabase'
 // ─── Content ──────────────────────────────────────────────────────────────────
 
 export async function fetchContent({ search = '', category = 'all' } = {}) {
-  if (!hasSupabaseConfig) return fallbackContent
+  if (!hasSupabaseConfig) {
+    const term = search.trim().toLowerCase()
+    return fallbackContent.filter((item) => {
+      const matchesType = category === 'all' || item.type === category
+      const matchesSearch = !term || [item.title, item.description, item.username]
+        .some((value) => value?.toLowerCase().includes(term))
+      return matchesType && matchesSearch
+    })
+  }
 
   let query = supabase
     .from('contents')
