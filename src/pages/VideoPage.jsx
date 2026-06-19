@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import {
-  addComment, deleteComment, deleteContent, fetchComments, fetchContent,
+  deleteContent, fetchContent,
   fetchContentById, fetchFollowStatus, fetchLikeStatus, followUser, getProfile,
-  likeContent, unfollowUser, unlikeContent,
+  likeContent, unfollowUser, unlikeContent, fetchQuickChatPhrases, suggestQuickChatPhrase,
 } from '../lib/contentApi'
 
 function embedUrl(url = '') {
@@ -28,13 +28,13 @@ export default function VideoPage() {
   const navigate = useNavigate()
   const [item, setItem] = useState(null)
   const [catalog, setCatalog] = useState([])
-  const [comments, setComments] = useState([])
+  const [quickPhrases, setQuickPhrases] = useState([])
   const [avatarUrl, setAvatarUrl] = useState('')
   const [liked, setLiked] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
-  const [body, setBody] = useState('')
-  const [posting, setPosting] = useState(false)
+  const [suggestion, setSuggestion] = useState('')
+  const [suggestionStatus, setSuggestionStatus] = useState('')
   const [loading, setLoading] = useState(true)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -45,10 +45,10 @@ export default function VideoPage() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    Promise.all([fetchContentById(id), fetchComments(id), fetchContent()]).then(async ([content, commentsData, contentData]) => {
+    Promise.all([fetchContentById(id), fetchQuickChatPhrases().catch(() => ({ phrases: [] })), fetchContent()]).then(async ([content, phraseData, contentData]) => {
       if (cancelled) return
       setItem(content)
-      setComments(commentsData || [])
+      setQuickPhrases(phraseData?.phrases || [])
       setCatalog(contentData || [])
       setLikeCount(content?.like_count || 0)
       if (content?.user_id) {
@@ -81,16 +81,18 @@ export default function VideoPage() {
     if (next) await followUser(user.id, item.user_id); else await unfollowUser(user.id, item.user_id)
   }
 
-  async function handlePost(event) {
+  async function handleSuggestQuickChat(event) {
     event.preventDefault()
-    if (!body.trim() || !user) return
-    setPosting(true)
+    if (!suggestion.trim() || !user) return
     try {
-      const comment = await addComment({ userId: user.id, contentId: id, username: user.user_metadata?.username || user.email?.split('@')[0] || 'creator', body: body.trim() })
-      setComments((current) => [...current, comment])
-      setBody('')
-    } finally { setPosting(false) }
+      await suggestQuickChatPhrase({ phraseText: suggestion.trim(), category: 'reaction' })
+      setSuggestion('')
+      setSuggestionStatus('Suggestion sent to moderation.')
+    } catch (err) {
+      setSuggestionStatus(err instanceof Error ? err.message : 'Suggestion failed')
+    }
   }
+
 
   async function handleDelete() {
     setDeleting(true)
@@ -120,7 +122,7 @@ export default function VideoPage() {
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={handleLike} className={`rounded-full px-4 py-2 text-sm font-bold transition ${liked ? 'bg-[#3ea6ff] text-[#06131c]' : 'bg-[#272727] hover:bg-[#383838]'}`}>{liked ? '♥' : '♡'} {likeCount}</button>
-            <a href="#comments" className="rounded-full bg-[#272727] px-4 py-2 text-sm font-bold hover:bg-[#383838]">Comment · {comments.length}</a>
+            <a href="#quick-chat" className="rounded-full bg-[#272727] px-4 py-2 text-sm font-bold hover:bg-[#383838]">Quick Chat</a>
             <button onClick={handleShare} className="rounded-full bg-[#272727] px-4 py-2 text-sm font-bold hover:bg-[#383838]">↗ Share</button>
             {isOwner && <button onClick={() => setShowDeleteModal(true)} className="rounded-full bg-red-500/15 px-4 py-2 text-sm font-bold text-red-300 hover:bg-red-500/25">Delete</button>}
           </div>
@@ -131,10 +133,15 @@ export default function VideoPage() {
           <p className="mt-2 whitespace-pre-wrap leading-6 text-[#ddd]">{item.description || 'A video from the UVideo creator community.'}</p>
         </div>
 
-        <section id="comments" className="mt-7 scroll-mt-24">
-          <h2 className="text-lg font-black">{comments.length} Comments</h2>
-          {user ? <form onSubmit={handlePost} className="mt-4 flex gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#3ea6ff] text-xs font-black text-black">{(user.email || 'U')[0].toUpperCase()}</span><input value={body} onChange={(event) => setBody(event.target.value)} placeholder="Add a comment" className="min-w-0 flex-1 border-b border-white/20 bg-transparent px-1 py-2 text-sm outline-none focus:border-[#3ea6ff]"/><button disabled={posting || !body.trim()} className="rounded-full bg-[#3ea6ff] px-4 text-sm font-black text-[#06131c] disabled:opacity-40">Comment</button></form> : <p className="mt-3 text-sm text-[#aaa]"><Link to="/auth" className="text-[#3ea6ff]">Sign in</Link> to join the conversation.</p>}
-          <div className="mt-6 space-y-6">{comments.map((comment) => <div key={comment.id} className="flex gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#24485d] text-xs font-black">{(comment.username || 'U')[0].toUpperCase()}</span><div className="min-w-0 flex-1"><p className="text-xs font-bold">@{comment.username || 'creator'}</p><p className="mt-1 break-words text-sm leading-5 text-[#ddd]">{comment.body}</p>{user?.id === comment.user_id && <button onClick={async () => { await deleteComment(comment.id); setComments((current) => current.filter((entry) => entry.id !== comment.id)) }} className="mt-1 text-xs text-[#777] hover:text-red-300">Delete</button>}</div></div>)}</div>
+        <section id="quick-chat" className="mt-7 scroll-mt-24">
+          <h2 className="text-lg font-black">Quick Chat</h2>
+          <p className="mt-2 text-sm text-[#aaa]">UVideo uses approved phrases instead of unrestricted comments.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {quickPhrases.map((phrase) => <button key={phrase.id || phrase.phraseText} className="rounded-full bg-[#272727] px-4 py-2 text-sm font-bold hover:bg-[#383838]">{phrase.phraseText}</button>)}
+            {quickPhrases.length === 0 && <p className="text-sm text-[#888]">Approved phrases are loading or not configured yet.</p>}
+          </div>
+          {user ? <form onSubmit={handleSuggestQuickChat} className="mt-5 grid gap-2 sm:grid-cols-[1fr_auto]"><input value={suggestion} onChange={(event) => setSuggestion(event.target.value)} placeholder="Suggest a Quick Chat phrase" className="theme-input rounded-xl border px-3 py-2 text-sm" maxLength={80}/><button disabled={!suggestion.trim()} className="rounded-full bg-[#3ea6ff] px-4 text-sm font-black text-[#06131c] disabled:opacity-40">Send to moderation</button></form> : <p className="mt-3 text-sm text-[#aaa]"><Link to="/auth" className="text-[#3ea6ff]">Sign in</Link> and verify age to use Quick Chat.</p>}
+          {suggestionStatus && <p className="mt-2 text-sm text-[#aaa]">{suggestionStatus}</p>}
         </section>
       </div>
 

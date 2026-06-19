@@ -2,13 +2,20 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { prisma } from '../lib/prisma.js'
 import { requireAuth } from '../middleware/auth.js'
+import { mapDiditResult } from '../lib/didit.js'
 
 const router = Router()
 
 const diditResultSchema = z.object({
   userId: z.string().min(1),
   provider: z.literal('didit').default('didit'),
-  result: z.enum(['verified_15_plus', 'verified_18_plus', 'failed', 'under_15']),
+  result: z.string().optional(),
+  verificationStatus: z.string().optional(),
+  age_result: z.string().optional(),
+  minimumAge: z.number().optional(),
+  ageRange: z.string().optional(),
+  passed: z.boolean().optional(),
+  threshold: z.number().optional(),
 })
 
 router.post('/didit/start', requireAuth, async (req, res) => {
@@ -27,10 +34,9 @@ router.post('/didit/webhook', async (req, res) => {
   const parsed = diditResultSchema.safeParse(req.body)
   if (!parsed.success) return res.status(400).json({ message: 'Invalid Didit result payload' })
 
-  const { userId, result } = parsed.data
-  if (!['verified_15_plus', 'verified_18_plus'].includes(result)) {
-    return res.json({ stored: false })
-  }
+  const { userId } = parsed.data
+  const result = mapDiditResult(parsed.data)
+  if (!result) return res.json({ stored: false })
 
   await prisma.user.update({
     where: { id: userId },
