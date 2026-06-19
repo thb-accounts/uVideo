@@ -18,9 +18,13 @@ export async function requireAuth(req, res, next) {
         email: true,
         username: true,
         fullName: true,
-        bio: true,
-        avatarUrl: true,
+        generatedAvatarSeed: true,
+        generatedAvatarVariant: true,
         privacy: true,
+        role: true,
+        verificationStatus: true,
+        verificationProvider: true,
+        verifiedAt: true,
       },
     })
 
