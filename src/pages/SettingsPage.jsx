@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { applyUiSettings, persistUiSettings, readUiSettings } from '../lib/uiSettings'
 import { readUsageSettings, saveUsageSettings } from '../lib/usageLimits'
+import VerifyButton from '../components/VerifyButton'
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(readUiSettings)
@@ -46,6 +47,8 @@ export default function SettingsPage() {
           <input type="checkbox" checked={settings.mutedByDefault} onChange={(e) => setSettings((s) => ({ ...s, mutedByDefault: e.target.checked }))} />
         </label>
       </div>
+
+      <VerifyButton />
 
       <div className="theme-card space-y-3 rounded-xl border p-4">
         <h2 className="text-lg font-semibold">Mindful usage</h2>
