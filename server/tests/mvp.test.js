@@ -152,3 +152,25 @@ test('Supabase token authentication rejects invalid or expired tokens', async ()
 
   assert.equal(user, null)
 })
+
+test('apiRequest preserves backend error message, detail, and HTTP status for UI display', () => {
+  const source = readFileSync(new URL('../../src/lib/apiClient.js', import.meta.url), 'utf8')
+
+  assert.match(source, /export class ApiRequestError extends Error/)
+  assert.match(source, /this\.detail = detail/)
+  assert.match(source, /this\.status = status/)
+  assert.match(source, /detailText \? `\$\{message\}: \$\{detailText\}` : message/)
+  assert.match(source, /throw new ApiRequestError\(\{/)
+})
+
+test('Didit start route returns safe diagnostics without moving workflow_id to env', () => {
+  const source = readFileSync(new URL('../src/routes/verification.routes.js', import.meta.url), 'utf8')
+
+  assert.match(source, /Didit API key is not configured/)
+  assert.match(source, /Didit callback URL is malformed/)
+  assert.match(source, /diditResponse\.status === 403/)
+  assert.match(source, /readDiditResponseDetail/)
+  assert.match(source, /workflow_id: DIDIT_WORKFLOW_ID/)
+  assert.doesNotMatch(source, /process\.env\.DIDIT_WORKFLOW_ID/)
+  assert.doesNotMatch(source, /DIDIT_API_KEY[^\n]*detail/)
+})
