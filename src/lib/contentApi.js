@@ -585,18 +585,27 @@ export async function fetchProfilesByIds(userIds = []) {
 
 // ─── UVideo API MVP flows ─────────────────────────────────────────────────────
 
-function getApiToken() {
-  return typeof window === 'undefined' ? '' : window.localStorage.getItem('uvideo_api_token') || ''
+export async function getSupabaseAccessToken() {
+  if (!hasSupabaseConfig || !supabase) {
+    throw new Error('Please sign in before uploading.')
+  }
+
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw new Error('Please sign in before uploading.')
+
+  const token = data?.session?.access_token
+  if (!token) throw new Error('Please sign in before uploading.')
+  return token
 }
 
 export async function requestVideoUpload({ title, description, fileName, contentType }) {
   const { apiRequest } = await import('./apiClient')
-  return apiRequest('/videos/uploads/presign', { method: 'POST', token: getApiToken(), body: { title, description, fileName, contentType } })
+  return apiRequest('/videos/uploads/presign', { method: 'POST', token: await getSupabaseAccessToken(), body: { title, description, fileName, contentType } })
 }
 
 export async function completeVideoUpload(videoId) {
   const { apiRequest } = await import('./apiClient')
-  return apiRequest(`/videos/${videoId}/uploads/complete`, { method: 'POST', token: getApiToken() })
+  return apiRequest(`/videos/${videoId}/uploads/complete`, { method: 'POST', token: await getSupabaseAccessToken() })
 }
 
 export async function fetchQuickChatPhrases() {
@@ -606,5 +615,5 @@ export async function fetchQuickChatPhrases() {
 
 export async function suggestQuickChatPhrase(payload) {
   const { apiRequest } = await import('./apiClient')
-  return apiRequest('/quick-chat/suggestions', { method: 'POST', token: getApiToken(), body: payload })
+  return apiRequest('/quick-chat/suggestions', { method: 'POST', token: await getSupabaseAccessToken(), body: payload })
 }
