@@ -7,35 +7,104 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum VerificationStatus {
+  unverified
+  verified_15_plus
+  verified_18_plus
+}
+
+enum UserRole {
+  user
+  creator
+  moderator
+  admin
+}
+
+enum VideoStatus {
+  pending
+  approved
+  rejected
+}
+
+enum StorageProvider {
+  aws_s3
+}
+
+enum QuickChatCategory {
+  reaction
+  question
+  feedback
+  praise
+  humor
+}
+
+enum ModerationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum ReportTargetType {
+  video
+  audio
+  user
+  quick_chat
+}
+
 model User {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  username     String    @unique
-  fullName     String
-  bio          String?
-  avatarUrl    String?
-  passwordHash String
-  privacy      String    @default("public")
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  videos       Video[]
-  likes        VideoLike[]
-  comments     Comment[]
+  id                     String               @id @default(cuid())
+  email                  String               @unique
+  username               String               @unique
+  fullName               String
+  bio                    String?
+  avatarUrl              String?
+  generatedAvatarSeed    String?
+  generatedAvatarVariant String?
+  passwordHash           String
+  privacy                String               @default("public")
+  role                   UserRole             @default(user)
+  verificationStatus     VerificationStatus   @default(unverified)
+  verificationProvider   String?
+  verifiedAt             DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  videos                 Video[]
+  likes                  VideoLike[]
+  comments               Comment[]
+  quickChatSuggestions   QuickChatSuggestion[] @relation("QuickChatSubmitter")
+  reviewedSuggestions    QuickChatSuggestion[] @relation("QuickChatReviewer")
+  reports                Report[]             @relation("ReportSubmitter")
+  reviewedReports        Report[]             @relation("ReportReviewer")
+  audioSubmissions       AudioSubmission[]     @relation("AudioSubmitter")
+  reviewedAudio          AudioSubmission[]     @relation("AudioReviewer")
+  auditLogs              AuditLog[]
 }
 
 model Video {
-  id          String      @id @default(cuid())
-  userId      String
-  caption     String
-  videoUrl    String
-  captionUrl  String?
-  thumbnail   String?
-  visibility  String      @default("public")
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  author      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  likes       VideoLike[]
-  comments    Comment[]
+  id              String          @id @default(cuid())
+  userId          String
+  caption         String
+  title           String?
+  description     String?
+  videoUrl        String?
+  captionUrl      String?
+  thumbnail       String?
+  thumbnailUrl    String?
+  visibility      String          @default("private")
+  status          VideoStatus     @default(pending)
+  storageProvider StorageProvider @default(aws_s3)
+  s3Key           String?
+  cloudfrontUrl   String?
+  approvedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  author          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  likes           VideoLike[]
+  comments        Comment[]
+
+  @@index([status, createdAt])
+  @@index([userId, createdAt])
 }
 
 model VideoLike {
@@ -57,4 +126,72 @@ model Comment {
   createdAt DateTime @default(now())
   video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model QuickChatPhrase {
+  id         String            @id @default(cuid())
+  phraseText String            @unique
+  category   QuickChatCategory
+  active     Boolean           @default(true)
+  createdAt  DateTime          @default(now())
+}
+
+model QuickChatSuggestion {
+  id           String            @id @default(cuid())
+  phraseText   String
+  normalized   String
+  category     QuickChatCategory
+  submittedBy  String
+  status       ModerationStatus  @default(pending)
+  reviewedBy   String?
+  createdAt    DateTime          @default(now())
+  reviewedAt   DateTime?
+  submitter    User              @relation("QuickChatSubmitter", fields: [submittedBy], references: [id], onDelete: Cascade)
+  reviewer     User?             @relation("QuickChatReviewer", fields: [reviewedBy], references: [id])
+
+  @@unique([normalized])
+  @@index([status, createdAt])
+}
+
+model AudioSubmission {
+  id              String           @id @default(cuid())
+  title           String
+  s3Key           String
+  storageProvider StorageProvider  @default(aws_s3)
+  submittedBy     String
+  status          ModerationStatus @default(pending)
+  reviewedBy      String?
+  rejectionReason String?
+  createdAt       DateTime         @default(now())
+  reviewedAt      DateTime?
+  submitter       User             @relation("AudioSubmitter", fields: [submittedBy], references: [id], onDelete: Cascade)
+  reviewer        User?            @relation("AudioReviewer", fields: [reviewedBy], references: [id])
+}
+
+model Report {
+  id          String           @id @default(cuid())
+  targetType  ReportTargetType
+  targetId    String
+  reason      String
+  reportedBy  String
+  status      ModerationStatus @default(pending)
+  reviewedBy  String?
+  createdAt   DateTime         @default(now())
+  reviewedAt  DateTime?
+  reporter    User             @relation("ReportSubmitter", fields: [reportedBy], references: [id], onDelete: Cascade)
+  reviewer    User?            @relation("ReportReviewer", fields: [reviewedBy], references: [id])
+
+  @@index([targetType, targetId])
+  @@index([status, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String
+  action    String
+  targetType String
+  targetId  String
+  metadata  Json?
+  createdAt DateTime @default(now())
+  actor     User     @relation(fields: [actorId], references: [id])
 }

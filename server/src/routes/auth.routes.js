@@ -12,8 +12,12 @@ function sanitizeUser(user) {
     email: user.email,
     username: user.username,
     fullName: user.fullName,
-    bio: user.bio,
-    avatarUrl: user.avatarUrl,
+    generatedAvatarSeed: user.generatedAvatarSeed,
+    generatedAvatarVariant: user.generatedAvatarVariant,
+    role: user.role,
+    verificationStatus: user.verificationStatus,
+    verificationProvider: user.verificationProvider,
+    verifiedAt: user.verifiedAt,
     privacy: user.privacy,
     createdAt: user.createdAt,
   }
@@ -41,6 +45,9 @@ router.post('/register', async (req, res) => {
       fullName,
       passwordHash,
       privacy: 'public',
+      verificationStatus: 'unverified',
+      generatedAvatarSeed: username.toLowerCase(),
+      generatedAvatarVariant: 'animal',
     },
   })
 

@@ -6,6 +6,8 @@ import morgan from 'morgan'
 import authRoutes from './routes/auth.routes.js'
 import usersRoutes from './routes/users.routes.js'
 import videosRoutes from './routes/videos.routes.js'
+import verificationRoutes from './routes/verification.routes.js'
+import quickChatRoutes from './routes/quick-chat.routes.js'
 
 export const app = express()
 const origin = process.env.CORS_ORIGIN || 'http://localhost:5173'
@@ -28,6 +30,8 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/videos', videosRoutes)
+app.use('/api/verification', verificationRoutes)
+app.use('/api/quick-chat', quickChatRoutes)
 
 app.use((error, _req, res, _next) => {
   void _next
