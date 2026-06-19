@@ -31,6 +31,23 @@ function getCallbackUrl(req) {
   return new URL('/settings?verification=complete', configuredOrigin).toString()
 }
 
+async function readDiditResponseDetail(diditResponse) {
+  const text = await diditResponse.text()
+  if (!text) return ''
+
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
+}
+
+function formatDiditDetailForLog(detail) {
+  if (!detail) return undefined
+  if (typeof detail === 'string') return detail
+  return detail
+}
+
 async function updateUserVerification({ vendorData, verificationStatus, verifiedAt = undefined }) {
   if (!vendorData) return false
 
@@ -47,25 +64,75 @@ async function updateUserVerification({ vendorData, verificationStatus, verified
 
 router.post('/didit/start', requireAuth, async (req, res) => {
   if (!process.env.DIDIT_API_KEY) {
+    console.error('Didit session create blocked: DIDIT_API_KEY is not configured')
     return res.status(500).json({ message: 'Didit API key is not configured' })
   }
 
-  const diditResponse = await fetch(DIDIT_SESSION_URL, {
-    method: 'POST',
-    headers: {
-      'x-api-key': process.env.DIDIT_API_KEY,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
+  let callback
+  try {
+    callback = getCallbackUrl(req)
+  } catch (error) {
+    console.error('Didit session create blocked: invalid callback URL', {
+      corsOriginConfigured: Boolean(process.env.CORS_ORIGIN),
+      host: req.get('host'),
+      error: error.message,
+    })
+    return res.status(500).json({
+      message: 'Didit callback URL is malformed',
+      detail: error.message,
+    })
+  }
+
+  let diditResponse
+  try {
+    diditResponse = await fetch(DIDIT_SESSION_URL, {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.DIDIT_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        workflow_id: DIDIT_WORKFLOW_ID,
+        vendor_data: req.user.id,
+        callback,
+      }),
+    })
+  } catch (error) {
+    console.error('Didit session create request failed before Didit returned a response', {
+      error: error.message,
+      callback,
       workflow_id: DIDIT_WORKFLOW_ID,
       vendor_data: req.user.id,
-      callback: getCallbackUrl(req),
-    }),
-  })
+    })
+    return res.status(502).json({
+      message: 'Didit session create request failed',
+      detail: error.message,
+    })
+  }
 
   if (!diditResponse.ok) {
-    const detail = await diditResponse.text()
-    return res.status(502).json({ message: 'Didit session create failed', detail })
+    const detail = await readDiditResponseDetail(diditResponse)
+    const safeDetail = formatDiditDetailForLog(detail)
+
+    console.error('Didit session create failed', {
+      status: diditResponse.status,
+      statusText: diditResponse.statusText,
+      detail: safeDetail,
+      hint: diditResponse.status === 403 ? 'Check whether DIDIT_API_KEY is invalid, revoked, or lacks permission for this workflow.' : undefined,
+      callback,
+      workflow_id: DIDIT_WORKFLOW_ID,
+      vendor_data: req.user.id,
+    })
+
+    return res.status(502).json({
+      message: 'Didit session create failed',
+      detail: {
+        status: diditResponse.status,
+        statusText: diditResponse.statusText,
+        didit: detail,
+        ...(diditResponse.status === 403 ? { hint: 'Didit rejected the API key or workflow permissions.' } : {}),
+      },
+    })
   }
 
   const session = await diditResponse.json()
