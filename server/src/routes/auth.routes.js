@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '../lib/prisma.js'
 import { signToken } from '../lib/jwt.js'
 import { requireAuth } from '../middleware/auth.js'
+import { inspectProfanity } from '../lib/profanity.js'
 
 const router = Router()
 
@@ -29,6 +30,9 @@ router.post('/register', async (req, res) => {
   if (!email || !password || !username || !fullName) {
     return res.status(400).json({ message: 'Missing required fields' })
   }
+
+  const usernameCheck = inspectProfanity(username)
+  if (!usernameCheck.clean) return res.status(400).json({ message: 'Username failed profanity review' })
 
   const existing = await prisma.user.findFirst({
     where: { OR: [{ email }, { username }] },

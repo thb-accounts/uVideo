@@ -4,7 +4,7 @@ import { prisma } from '../lib/prisma.js'
 import { requireAuth } from '../middleware/auth.js'
 import { canPublishPublicly, isModerator } from '../lib/permissions.js'
 import { inspectProfanity } from '../lib/profanity.js'
-import { buildPendingVideoKey, cloudfrontUrlForKey, createPresignedPutUrl } from '../lib/storage.js'
+import { buildPendingVideoKey, createPresignedPutUrl, moveVideoForModeration } from '../lib/storage.js'
 
 const router = Router()
 
@@ -42,7 +42,7 @@ router.get('/feed', async (_req, res) => {
           generatedAvatarVariant: true,
         },
       },
-      _count: { select: { likes: true, comments: true } },
+      _count: { select: { likes: true } },
     },
   })
   return res.json({ videos })
@@ -121,7 +121,7 @@ router.post('/upload', requireAuth, async (req, res) => {
           generatedAvatarVariant: true,
         },
       },
-      _count: { select: { likes: true, comments: true } },
+      _count: { select: { likes: true } },
     },
   })
 
@@ -142,7 +142,11 @@ router.post('/:videoId/moderation', requireAuth, async (req, res) => {
     : { status: 'rejected', visibility: 'private', rejectionReason: body.reason || null }
   const existing = await prisma.video.findUnique({ where: { id: req.params.videoId } })
   if (!existing) return res.status(404).json({ message: 'Video not found' })
-  if (body.status === 'approved' && existing.s3Key) data.cloudfrontUrl = cloudfrontUrlForKey(existing.s3Key)
+  if (existing.s3Key) {
+    const moved = await moveVideoForModeration({ currentKey: existing.s3Key, videoId: existing.id, status: body.status })
+    data.s3Key = moved.key
+    data.cloudfrontUrl = moved.cloudfrontUrl
+  }
   const video = await prisma.video.update({ where: { id: existing.id }, data })
   await prisma.auditLog.create({ data: { actorId: req.user.id, action: `video.${body.status}`, targetType: 'video', targetId: video.id, metadata: { reason: body.reason || null } } })
   return res.json({ video })
