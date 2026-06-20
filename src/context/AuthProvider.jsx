@@ -2,6 +2,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { AuthContext } from './auth-context'
 
+function isVerifiedUser(account) {
+  return Boolean(account?.email_confirmed_at || account?.confirmed_at || account?.user_metadata?.manual_verified === true)
+}
+
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(hasSupabaseConfig)
@@ -13,7 +17,8 @@ export default function AuthProvider({ children }) {
 
     supabase.auth.getUser().then(({ data }) => {
       if (active) {
-        setUser(data.user ?? null)
+        setUser(isVerifiedUser(data.user) ? data.user : null)
+        if (data.user && !isVerifiedUser(data.user)) supabase.auth.signOut()
         setLoading(false)
       }
     })
@@ -21,7 +26,9 @@ export default function AuthProvider({ children }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+      const nextUser = session?.user ?? null
+      setUser(isVerifiedUser(nextUser) ? nextUser : null)
+      if (nextUser && !isVerifiedUser(nextUser)) supabase.auth.signOut()
       setLoading(false)
     })
 
@@ -56,12 +63,18 @@ export default function AuthProvider({ children }) {
 
       if (profileError) throw profileError
     }
+
+    await supabase.auth.signOut()
   }
 
   async function signIn({ email, password }) {
     if (!hasSupabaseConfig) throw new Error('Configure Supabase env vars to enable auth.')
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
+    if (!isVerifiedUser(data.user)) {
+      await supabase.auth.signOut()
+      throw new Error('Your account is not verified yet. Email hello@unrealcake8.site to request your verification link, or stay logged out if you do not want to verify.')
+    }
   }
 
   async function signOut() {

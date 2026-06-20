@@ -25,7 +25,7 @@ export default function AuthPage() {
     try {
       if (mode === 'signup') {
         await signUp({ email, password, fullName, username })
-        setStatus('Check your email to confirm your account, then log in.')
+        setStatus('Account created. To verify, email hello@unrealcake8.site and request your verification link. You have been logged out until verification is complete.')
       } else {
         await signIn({ email, password })
         setStatus('Logged in successfully.')
@@ -41,6 +41,7 @@ export default function AuthPage() {
       <div className="w-full rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-glow">
         <h1 className="mb-2 text-2xl font-bold text-neon-cyan">UVideo</h1>
         <p className="mb-4 text-sm text-slate-300">Modern interactive media + learning for all ages.</p>
+        <p className="mb-4 rounded-md bg-cyan-500/10 p-2 text-xs text-cyan-100">New accounts must be verified before login. Email <a className="font-semibold underline" href="mailto:hello@unrealcake8.site?subject=UVideo%20account%20verification%20request">hello@unrealcake8.site</a> to request your verification link; otherwise you will stay logged out.</p>
 
         {!hasSupabaseConfig && (
           <p className="mb-3 rounded-md bg-yellow-500/15 p-2 text-xs text-yellow-200">

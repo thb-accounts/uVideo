@@ -16,6 +16,8 @@ create table if not exists public.profiles (
   bio text,
   age_group text default 'all',
   role text default 'user' check (role in ('user', 'moderator', 'admin')),
+  verification_status text default 'pending' check (verification_status in ('pending', 'verified')),
+  verified_at timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -28,6 +30,8 @@ alter table public.profiles add column if not exists avatar_url text;
 alter table public.profiles add column if not exists bio text;
 alter table public.profiles add column if not exists age_group text default 'all';
 alter table public.profiles add column if not exists role text default 'user';
+alter table public.profiles add column if not exists verification_status text default 'pending';
+alter table public.profiles add column if not exists verified_at timestamptz;
 alter table public.profiles add column if not exists created_at timestamptz default now();
 alter table public.profiles add column if not exists updated_at timestamptz default now();
 create unique index if not exists profiles_username_unique on public.profiles (username) where username is not null;
@@ -39,7 +43,7 @@ create table if not exists public.contents (
   username text,
   title text not null,
   description text not null,
-  type text not null default 'video' check (type in ('video', 'lesson', 'mini')),
+  type text not null default 'video' check (type in ('video', 'lesson', 'mini', 'short', 'slim')),
   category text,
   media_url text,
   caption_url text,
@@ -67,6 +71,8 @@ alter table public.contents add column if not exists username text;
 alter table public.contents add column if not exists title text;
 alter table public.contents add column if not exists description text;
 alter table public.contents add column if not exists type text default 'video';
+alter table public.contents drop constraint if exists contents_type_check;
+alter table public.contents add constraint contents_type_check check (type in ('video', 'lesson', 'mini', 'short', 'slim'));
 alter table public.contents add column if not exists category text;
 alter table public.contents add column if not exists media_url text;
 alter table public.contents add column if not exists caption_url text;
@@ -203,6 +209,21 @@ as $$
     from public.profiles
     where id = auth.uid()
       and role in ('moderator', 'admin')
+  );
+$$;
+
+create or replace function public.is_verified_auth_user()
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (
+    select 1
+    from auth.users
+    where id = auth.uid()
+      and email_confirmed_at is not null
   );
 $$;
 
@@ -358,7 +379,7 @@ drop policy if exists "published contents are public readable" on public.content
 create policy "published contents are public readable" on public.contents for select using (coalesce(status, 'published') = 'published' or auth.uid() = user_id or public.is_moderator());
 
 drop policy if exists "users insert own contents" on public.contents;
-create policy "users insert own contents" on public.contents for insert to authenticated with check (auth.uid() = user_id);
+create policy "users insert own contents" on public.contents for insert to authenticated with check (auth.uid() = user_id and public.is_verified_auth_user());
 
 drop policy if exists "users update own contents" on public.contents;
 create policy "users update own contents" on public.contents for update to authenticated using (auth.uid() = user_id) with check (auth.uid() = user_id);

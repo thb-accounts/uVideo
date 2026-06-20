@@ -29,6 +29,7 @@ export default function UploadPage() {
     const title = String(formData.get('title') || '').trim()
     const description = String(formData.get('description') || '').trim()
     const category = String(formData.get('category') || 'General').trim()
+    const contentType = String(formData.get('content_type') || 'video').trim()
     const points = Number(formData.get('points')) || 20
 
     if ((!videoFile || videoFile.size === 0) && !mediaUrl) {
@@ -64,7 +65,7 @@ export default function UploadPage() {
         title,
         description,
         username,
-        type: 'video',
+        type: contentType,
         media_url: mediaUrl,
         caption_url: captionUrl || null,
         category,
@@ -94,7 +95,11 @@ export default function UploadPage() {
       <form className="theme-card grid gap-4 rounded-2xl border p-5 sm:p-6" onSubmit={handleSubmit}>
         <input className="theme-input rounded-xl border px-3 py-2" name="title" placeholder="Video title" required />
         <textarea className="theme-input rounded-xl border px-3 py-2" name="description" placeholder="Description" required />
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-3">
+          <select className="theme-input rounded-xl border px-3 py-2" name="content_type" defaultValue="video" aria-label="Post format">
+            <option value="video">Regular video</option>
+            <option value="short">Slim / short</option>
+          </select>
           <select className="theme-input rounded-xl border px-3 py-2" name="category" defaultValue="MathArt"><option>MathArt</option><option>Tutorial</option><option>Coding</option><option>Desmos</option><option>Shorts</option><option>UnrealCake8</option><option>General</option></select>
           <input className="theme-input rounded-xl border px-3 py-2" name="points" type="number" min="5" defaultValue="20" />
         </div>

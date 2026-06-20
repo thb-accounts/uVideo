@@ -84,7 +84,7 @@ export default function HomePage() {
     setLoading(true)
     setError('')
     Promise.all([
-      fetchContent({ search, category: 'all' }),
+      fetchContent({ search, category: 'all', feed: 'videos' }),
       search ? fetchProfilesBySearch(search) : Promise.resolve([]),
     ]).then(([content, matchedProfiles]) => {
       if (!cancelled) {
