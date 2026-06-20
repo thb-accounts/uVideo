@@ -2,9 +2,9 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import {
-  addComment, deleteComment, deleteContent, fetchComments, fetchContent,
-  fetchContentById, fetchFollowStatus, fetchLikeStatus, followUser, getProfile,
-  likeContent, unfollowUser, unlikeContent,
+  deleteContent, fetchContent,
+  fetchContentById, fetchLikeStatus, getProfile,
+  likeContent, unlikeContent,
 } from '../lib/contentApi'
 
 function embedUrl(url = '') {
@@ -28,13 +28,9 @@ export default function VideoPage() {
   const navigate = useNavigate()
   const [item, setItem] = useState(null)
   const [catalog, setCatalog] = useState([])
-  const [comments, setComments] = useState([])
   const [avatarUrl, setAvatarUrl] = useState('')
   const [liked, setLiked] = useState(false)
-  const [subscribed, setSubscribed] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
-  const [body, setBody] = useState('')
-  const [posting, setPosting] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -45,10 +41,9 @@ export default function VideoPage() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    Promise.all([fetchContentById(id), fetchComments(id), fetchContent()]).then(async ([content, commentsData, contentData]) => {
+    Promise.all([fetchContentById(id), fetchContent()]).then(async ([content, contentData]) => {
       if (cancelled) return
       setItem(content)
-      setComments(commentsData || [])
       setCatalog(contentData || [])
       setLikeCount(content?.like_count || 0)
       if (content?.user_id) {
@@ -62,7 +57,6 @@ export default function VideoPage() {
   useEffect(() => {
     if (!user?.id || !item) return
     fetchLikeStatus(user.id, id).then(setLiked)
-    if (item.user_id && item.user_id !== user.id) fetchFollowStatus(user.id, item.user_id).then(setSubscribed)
   }, [user?.id, item, id])
 
   async function handleLike() {
@@ -73,24 +67,9 @@ export default function VideoPage() {
     if (next) await likeContent(user.id, id); else await unlikeContent(user.id, id)
   }
 
-  async function handleSubscribe() {
-    if (!user) return navigate('/auth')
-    if (!item.user_id || isOwner) return
-    const next = !subscribed
-    setSubscribed(next)
-    if (next) await followUser(user.id, item.user_id); else await unfollowUser(user.id, item.user_id)
-  }
 
-  async function handlePost(event) {
-    event.preventDefault()
-    if (!body.trim() || !user) return
-    setPosting(true)
-    try {
-      const comment = await addComment({ userId: user.id, contentId: id, username: user.user_metadata?.username || user.email?.split('@')[0] || 'creator', body: body.trim() })
-      setComments((current) => [...current, comment])
-      setBody('')
-    } finally { setPosting(false) }
-  }
+
+
 
   async function handleDelete() {
     setDeleting(true)
@@ -116,11 +95,9 @@ export default function VideoPage() {
               {avatarUrl ? <img src={avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#3ea6ff] to-[#00c8ff] font-black text-[#06131c]">{(item.username || 'U')[0].toUpperCase()}</span>}
               <span className="min-w-0"><strong className="block truncate text-sm">{item.username || 'UVideo creator'}</strong><small className="text-[#888]">Creator channel</small></span>
             </Link>
-            {!isOwner && item.user_id && <button onClick={handleSubscribe} className={`rounded-full px-5 py-2 text-sm font-black transition ${subscribed ? 'bg-[#272727] text-white hover:bg-[#383838]' : 'bg-white text-black hover:bg-[#ddd]'}`}>{subscribed ? 'Subscribed' : 'Subscribe'}</button>}
           </div>
           <div className="flex flex-wrap gap-2">
             <button onClick={handleLike} className={`rounded-full px-4 py-2 text-sm font-bold transition ${liked ? 'bg-[#3ea6ff] text-[#06131c]' : 'bg-[#272727] hover:bg-[#383838]'}`}>{liked ? '♥' : '♡'} {likeCount}</button>
-            <a href="#comments" className="rounded-full bg-[#272727] px-4 py-2 text-sm font-bold hover:bg-[#383838]">Comment · {comments.length}</a>
             <button onClick={handleShare} className="rounded-full bg-[#272727] px-4 py-2 text-sm font-bold hover:bg-[#383838]">↗ Share</button>
             {isOwner && <button onClick={() => setShowDeleteModal(true)} className="rounded-full bg-red-500/15 px-4 py-2 text-sm font-bold text-red-300 hover:bg-red-500/25">Delete</button>}
           </div>
@@ -131,11 +108,6 @@ export default function VideoPage() {
           <p className="mt-2 whitespace-pre-wrap leading-6 text-[#ddd]">{item.description || 'A video from the UVideo creator community.'}</p>
         </div>
 
-        <section id="comments" className="mt-7 scroll-mt-24">
-          <h2 className="text-lg font-black">{comments.length} Comments</h2>
-          {user ? <form onSubmit={handlePost} className="mt-4 flex gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#3ea6ff] text-xs font-black text-black">{(user.email || 'U')[0].toUpperCase()}</span><input value={body} onChange={(event) => setBody(event.target.value)} placeholder="Add a comment" className="min-w-0 flex-1 border-b border-white/20 bg-transparent px-1 py-2 text-sm outline-none focus:border-[#3ea6ff]"/><button disabled={posting || !body.trim()} className="rounded-full bg-[#3ea6ff] px-4 text-sm font-black text-[#06131c] disabled:opacity-40">Comment</button></form> : <p className="mt-3 text-sm text-[#aaa]"><Link to="/auth" className="text-[#3ea6ff]">Sign in</Link> to join the conversation.</p>}
-          <div className="mt-6 space-y-6">{comments.map((comment) => <div key={comment.id} className="flex gap-3"><span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#24485d] text-xs font-black">{(comment.username || 'U')[0].toUpperCase()}</span><div className="min-w-0 flex-1"><p className="text-xs font-bold">@{comment.username || 'creator'}</p><p className="mt-1 break-words text-sm leading-5 text-[#ddd]">{comment.body}</p>{user?.id === comment.user_id && <button onClick={async () => { await deleteComment(comment.id); setComments((current) => current.filter((entry) => entry.id !== comment.id)) }} className="mt-1 text-xs text-[#777] hover:text-red-300">Delete</button>}</div></div>)}</div>
-        </section>
       </div>
 
       <aside className="space-y-4"><h2 className="text-lg font-black">Up next</h2>{recommendations.map((video) => <Recommendation key={video.id} item={video} />)}{recommendations.length === 0 && <p className="text-sm text-[#888]">More creator videos are on the way.</p>}</aside>
