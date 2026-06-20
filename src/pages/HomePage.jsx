@@ -163,7 +163,7 @@ export default function HomePage() {
       </section>
 
       <footer className="mt-14 border-t border-white/10 py-8 text-xs leading-5 text-[#777]">
-        <p>UVideo is an independent UnrealCake8 project. MathArt is an UnrealCake8 project. We are not affiliated with Desmos.</p>
+        <p>UVideo is an open-source platform made by the UC8 Foundation, which is not a company.</p>
       </footer>
     </div>
   )

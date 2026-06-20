@@ -87,7 +87,7 @@ export default function UploadPage() {
   return (
     <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-8">
       <div><p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p><h1 className="mt-2 text-3xl font-black">Upload to UVideo</h1></div>
-      <p className="theme-muted">Share a MathArt video, tutorial, creator story, or short with the UVideo community.</p>
+      <p className="theme-muted">Share a video, tutorial, creator story, or slim with the UVideo community.</p>
 
       <p className="text-sm theme-muted">Posting as @{username || 'set-username-in-profile'}</p>
 
@@ -106,7 +106,7 @@ export default function UploadPage() {
             name="video_file"
             type="file"
           />
-          <span className="text-xs font-normal theme-muted">Uploaded videos are stored and delivered through Cloudinary.</span>
+          <span className="text-xs font-normal theme-muted">Uploaded videos are stored and delivered through Cloudinary, a worldwide trusted provider.</span>
         </label>
         <label className="grid gap-1 text-sm font-semibold">
           Backup MP4 link
