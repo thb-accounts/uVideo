@@ -9,7 +9,7 @@ export function isShortContent(item = {}) {
   return type === 'short' || type === 'slim' || category === 'shorts' || category === 'slims'
 }
 
-export async function fetchContent({ search = '', category = 'all', feed = 'videos' } = {}) {
+export async function fetchContent({ category = 'all', feed = 'videos' } = {}) {
   if (!hasSupabaseConfig) {
     const content = feed === 'shorts'
       ? fallbackContent.filter(isShortContent)
@@ -30,10 +30,7 @@ export async function fetchContent({ search = '', category = 'all', feed = 'vide
   }
 
   if (category !== 'all') query = query.eq('type', category)
-  if (search.trim()) {
-    const term = search.trim()
-    query = query.or(`title.ilike.%${term}%,description.ilike.%${term}%,username.ilike.%${term}%`)
-  }
+
 
   const { data, error } = await query
   if (error) throw error
@@ -175,15 +172,8 @@ export async function fetchComments(contentId) {
   }))
 }
 
-export async function addComment({ userId, contentId, username, body }) {
-  if (!hasSupabaseConfig || !userId) throw new Error('Not authenticated')
-  const { data, error } = await supabase
-    .from('comments')
-    .insert({ user_id: userId, content_id: contentId, user_handle: username, body, status: 'published', moderation_method: null, moderation_reason: null, moderation_requested_at: null })
-    .select()
-    .single()
-  if (error) throw error
-  return data
+export async function addComment() {
+  throw new Error('Commenting is disabled.')
 }
 
 export async function deleteComment(commentId) {
@@ -283,9 +273,8 @@ export async function getDashboardData(userId) {
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
 
-export async function saveProfile(userId, values) {
-  if (!hasSupabaseConfig || !userId) return
-  await supabase.from('profiles').upsert({ id: userId, ...values })
+export async function saveProfile() {
+  throw new Error('Profile editing is disabled.')
 }
 
 export async function getProfile(userId) {
@@ -322,39 +311,10 @@ export async function getUserIdByUsername(username) {
   return data?.id ?? null
 }
 
-export async function fetchProfilesBySearch(search = '', { limit = 8 } = {}) {
-  const term = search.trim()
-  if (!term) return []
-
-  if (!hasSupabaseConfig) {
-    const seen = new Set()
-    return fallbackContent
-      .filter((item) => item.username?.toLowerCase().includes(term.toLowerCase()))
-      .filter((item) => {
-        if (seen.has(item.username)) return false
-        seen.add(item.username)
-        return true
-      })
-      .slice(0, limit)
-      .map((item) => ({
-        id: item.user_id || item.username,
-        username: item.username,
-        display_name: item.username,
-        avatar_url: '',
-        bio: 'Demo creator profile',
-      }))
-  }
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, username, display_name, full_name, avatar_url, bio')
-    .not('username', 'is', null)
-    .or(`username.ilike.%${term}%,display_name.ilike.%${term}%,full_name.ilike.%${term}%`)
-    .limit(limit)
-
-  if (error) throw error
-  return data ?? []
+export async function fetchProfilesBySearch() {
+  return []
 }
+
 
 export async function fetchSuggestedProfiles({ excludeUserId = '', limit = 8 } = {}) {
   if (!hasSupabaseConfig) return []
@@ -395,112 +355,40 @@ export async function fetchProfileAvatarsByUserIds(userIds = []) {
 
 // ─── Following / Followers ───────────────────────────────────────────────────
 
-export async function fetchFollowStatus(followerId, followingId) {
-  if (!hasSupabaseConfig || !followerId || !followingId) return false
-  const { data } = await supabase
-    .from('user_follows')
-    .select('follower_id')
-    .eq('follower_id', followerId)
-    .eq('following_id', followingId)
-    .maybeSingle()
-  return Boolean(data)
+export async function fetchFollowStatus() {
+  return false
 }
 
-export async function followUser(followerId, followingId) {
-  if (!hasSupabaseConfig || !followerId || !followingId || followerId === followingId) return
-  const { error } = await supabase
-    .from('user_follows')
-    .upsert({ follower_id: followerId, following_id: followingId }, { onConflict: 'follower_id,following_id' })
-  if (error) throw error
+export async function followUser() {
+  return undefined
 }
 
-export async function unfollowUser(followerId, followingId) {
-  if (!hasSupabaseConfig || !followerId || !followingId) return
-  const { error } = await supabase
-    .from('user_follows')
-    .delete()
-    .eq('follower_id', followerId)
-    .eq('following_id', followingId)
-  if (error) throw error
+export async function unfollowUser() {
+  return undefined
 }
 
-export async function fetchFollowerCount(userId) {
-  if (!hasSupabaseConfig || !userId) return 0
-  const { count, error } = await supabase
-    .from('user_follows')
-    .select('*', { count: 'exact', head: true })
-    .eq('following_id', userId)
-  if (error) throw error
-  return count ?? 0
+export async function fetchFollowerCount() {
+  return 0
 }
 
-export async function fetchFollowingCount(userId) {
-  if (!hasSupabaseConfig || !userId) return 0
-  const { count, error } = await supabase
-    .from('user_follows')
-    .select('*', { count: 'exact', head: true })
-    .eq('follower_id', userId)
-  if (error) throw error
-  return count ?? 0
+export async function fetchFollowingCount() {
+  return 0
 }
 
-export async function fetchFollowingIds(userId) {
-  if (!hasSupabaseConfig || !userId) return []
-  const { data, error } = await supabase
-    .from('user_follows')
-    .select('following_id')
-    .eq('follower_id', userId)
-  if (error) throw error
-  return (data ?? []).map((row) => row.following_id).filter(Boolean)
+export async function fetchFollowingIds() {
+  return []
 }
 
-export async function fetchFollowersForUser(userId) {
-  if (!hasSupabaseConfig || !userId) return []
-  const { data, error } = await supabase
-    .from('user_follows')
-    .select('follower_id, created_at')
-    .eq('following_id', userId)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-
-  const profileMap = await fetchProfilesByIds((data ?? []).map((row) => row.follower_id))
-  return (data ?? []).map((row) => ({
-    ...row,
-    profiles: profileMap[row.follower_id] ?? null,
-  }))
+export async function fetchFollowersForUser() {
+  return []
 }
 
-export async function fetchFollowingForUser(userId) {
-  if (!hasSupabaseConfig || !userId) return []
-  const { data, error } = await supabase
-    .from('user_follows')
-    .select('following_id, created_at')
-    .eq('follower_id', userId)
-    .order('created_at', { ascending: false })
-  if (error) throw error
-
-  const profileMap = await fetchProfilesByIds((data ?? []).map((row) => row.following_id))
-  return (data ?? []).map((row) => ({
-    ...row,
-    profiles: profileMap[row.following_id] ?? null,
-  }))
+export async function fetchFollowingForUser() {
+  return []
 }
 
-export async function fetchFollowNotifications(userId) {
-  if (!hasSupabaseConfig || !userId) return []
-  const { data, error } = await supabase
-    .from('user_follows')
-    .select('follower_id, created_at')
-    .eq('following_id', userId)
-    .order('created_at', { ascending: false })
-    .limit(30)
-  if (error) throw error
-
-  const profileMap = await fetchProfilesByIds((data ?? []).map((row) => row.follower_id))
-  return (data ?? []).map((row) => ({
-    ...row,
-    profiles: profileMap[row.follower_id] ?? null,
-  }))
+export async function fetchFollowNotifications() {
+  return []
 }
 
 // ─── Content Creation ─────────────────────────────────────────────────────────

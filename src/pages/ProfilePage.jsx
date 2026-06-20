@@ -3,11 +3,6 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import {
   getProfile,
-  saveProfile,
-  fetchFollowerCount,
-  fetchFollowingCount,
-  fetchFollowersForUser,
-  fetchFollowingForUser,
   fetchVideosByUsername,
   updateContentPin,
   fetchLikedVideosForUser,
@@ -28,36 +23,6 @@ function sortPinnedVideos(videos) {
     if (Boolean(a.is_pinned) !== Boolean(b.is_pinned)) return a.is_pinned ? -1 : 1
     return new Date(b.pinned_at || b.created_at || 0) - new Date(a.pinned_at || a.created_at || 0)
   })
-}
-
-function SocialAccountList({ title, entries, idKey, emptyMessage }) {
-  return (
-    <div className="mt-5 w-full max-w-sm rounded-2xl bg-white/5 p-4 text-left">
-      <p className="mb-3 text-sm font-bold uppercase tracking-[0.2em] text-white/45">{title}</p>
-      <div className="space-y-3">
-        {entries.length === 0 && <p className="text-sm text-white/45">{emptyMessage}</p>}
-        {entries.map((entry) => {
-          const account = entry.profiles
-          const username = account?.username || 'user'
-          return (
-            <Link key={entry[idKey]} to={`/u/${username}`} className="flex items-center gap-3 rounded-xl p-2 hover:bg-white/10">
-              {account?.avatar_url ? (
-                <img src={account.avatar_url} alt={`${username} avatar`} className="h-10 w-10 rounded-full object-cover" />
-              ) : (
-                <span className="grid h-10 w-10 place-items-center rounded-full bg-[#151a17] text-base font-black text-white/45">
-                  {(account?.display_name || username || '?')[0].toUpperCase()}
-                </span>
-              )}
-              <span>
-                <span className="block text-sm font-bold text-white">{account?.display_name || username}</span>
-                <span className="block text-xs text-white/50">@{username}</span>
-              </span>
-            </Link>
-          )
-        })}
-      </div>
-    </div>
-  )
 }
 
 function ProfileAvatar({ profile }) {
@@ -84,17 +49,11 @@ function ProfileBadgeIcon() {
 export default function ProfilePage() {
   const { user } = useAuth()
   const [profile, setProfile] = useState({ display_name: '', username: '', avatar_url: '', bio: '', age_group: 'all' })
-  const [status, setStatus] = useState('')
-  const [followersCount, setFollowersCount] = useState(0)
-  const [followingCount, setFollowingCount] = useState(0)
-  const [followers, setFollowers] = useState([])
-  const [following, setFollowing] = useState([])
   const [videos, setVideos] = useState([])
   const [videosLoading, setVideosLoading] = useState(true)
   const [videosError, setVideosError] = useState('')
   const [likedVideos, setLikedVideos] = useState([])
   const [likedVideosLoading, setLikedVideosLoading] = useState(false)
-  const [activeSocialList, setActiveSocialList] = useState('')
   const [activeTab, setActiveTab] = useState(0)
 
   useEffect(() => {
@@ -126,21 +85,7 @@ export default function ProfilePage() {
     loadLikedVideos()
   }, [activeTab, user.id])
 
-  useEffect(() => {
-    async function loadSocialData() {
-      const [followerCount, followingCountValue, followersData, followingData] = await Promise.all([
-        fetchFollowerCount(user.id),
-        fetchFollowingCount(user.id),
-        fetchFollowersForUser(user.id),
-        fetchFollowingForUser(user.id),
-      ])
-      setFollowersCount(followerCount)
-      setFollowingCount(followingCountValue)
-      setFollowers(followersData)
-      setFollowing(followingData)
-    }
-    loadSocialData()
-  }, [user.id])
+
 
   useEffect(() => {
     if (!profile.username && !user.id) return undefined
@@ -168,15 +113,7 @@ export default function ProfilePage() {
     }
   }, [profile.username, user.id])
 
-  async function handleSubmit(event) {
-    event.preventDefault()
-    if (!isSupportedAvatarUrl(profile.avatar_url || '')) {
-      setStatus('Profile picture URL must point to an image (png, jpg, jpeg, svg, gif, webp, avif).')
-      return
-    }
-    await saveProfile(user.id, profile)
-    setStatus('Profile saved.')
-  }
+
 
   const displayName = profile.display_name || profile.username || 'Creator'
   const handle = profile.username || user.email?.split('@')[0] || 'user'
@@ -209,35 +146,17 @@ export default function ProfilePage() {
         <div className="flex flex-col items-center text-center">
           <div className="relative h-20 w-20 rounded-full border border-white/20 bg-[#151a17]">
             <ProfileAvatar profile={profile} />
-            <span className="absolute -bottom-1 -right-1 grid h-7 w-7 place-items-center rounded-full bg-[var(--brand-leaf)] text-2xl font-black text-white">+</span>
           </div>
           <div className="mt-4 flex max-w-full items-center justify-center gap-2">
             <ProfileBadgeIcon />
             <h1 className="truncate text-2xl font-black tracking-tight">{displayName}</h1>
-            <button className="rounded-full bg-white/15 px-4 py-1.5 text-base font-bold">Edit</button>
           </div>
           <p className="text-lg text-white/55">@{handle}</p>
-          <div className="mt-6 grid w-full max-w-sm grid-cols-3 divide-x divide-white/10">
-            <button type="button" onClick={() => setActiveSocialList((current) => (current === 'following' ? '' : 'following'))}>
-              <p className="text-3xl font-black">{followingCount}</p>
-              <p className="text-lg text-white/55">Subscriptions</p>
-            </button>
-            <button type="button" onClick={() => setActiveSocialList((current) => (current === 'followers' ? '' : 'followers'))}>
-              <p className="text-3xl font-black">{followersCount}</p>
-              <p className="text-lg text-white/55">Subscribers</p>
-            </button>
-            <div>
-              <p className="text-3xl font-black">{totalLikes}</p>
-              <p className="text-lg text-white/55">Likes</p>
-            </div>
+          <div className="mt-6 grid w-full max-w-sm grid-cols-2 divide-x divide-white/10">
+            <div><p className="text-3xl font-black">{videos.length}</p><p className="text-lg text-white/55">Posts</p></div>
+            <div><p className="text-3xl font-black">{totalLikes}</p><p className="text-lg text-white/55">Likes</p></div>
           </div>
           {profile.bio ? <p className="mt-5 text-xl">{profile.bio}</p> : <p className="mt-5 text-base text-white/45">No bio yet.</p>}
-          {activeSocialList === 'following' && (
-            <SocialAccountList title="Subscriptions" entries={following} idKey="following_id" emptyMessage="No subscriptions yet." />
-          )}
-          {activeSocialList === 'followers' && (
-            <SocialAccountList title="Subscribers" entries={followers} idKey="follower_id" emptyMessage="No subscribers yet." />
-          )}
         </div>
         <div className="mt-8 grid grid-cols-5 items-end border-b border-white/20 text-white/55">
           {tabs.map((tab, index) => (
@@ -339,73 +258,16 @@ export default function ProfilePage() {
         <h1 className="text-2xl font-bold text-neon-cyan">Profile</h1>
       </div>
       <section className="theme-card hidden rounded-xl border p-4 lg:block">
-        <div className="flex gap-6 text-sm text-white">
-          <button type="button" onClick={() => setActiveSocialList('followers')}><span className="font-bold">{followersCount}</span> subscribers</button>
-          <button type="button" onClick={() => setActiveSocialList('following')}><span className="font-bold">{followingCount}</span> subscriptions</button>
-        </div>
-      </section>
-      <form className="theme-card hidden space-y-3 rounded-xl border p-4 lg:block" onSubmit={handleSubmit}>
-        <label className="block">
-          <span className="mb-1 block text-sm text-slate-300">Display name</span>
-          <input className="theme-input w-full rounded-md border p-2" value={profile.display_name || ''} onChange={(e) => setProfile((p) => ({ ...p, display_name: e.target.value }))} />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm text-slate-300">Username</span>
-          <input className="theme-input w-full rounded-md border p-2" value={profile.username || ''} onChange={(e) => setProfile((p) => ({ ...p, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))} />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm text-slate-300">Profile picture URL</span>
-          <input
-            className="theme-input w-full rounded-md border p-2"
-            value={profile.avatar_url || ''}
-            onChange={(e) => setProfile((p) => ({ ...p, avatar_url: e.target.value.trim() }))}
-            placeholder="https://example.com/avatar.png"
-            type="url"
-          />
-          <span className="mt-1 block text-xs theme-muted">Supports .jpg, .jpeg, .png, .svg, .gif, .webp, and .avif links.</span>
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm text-slate-300">Bio</span>
-          <textarea className="theme-input w-full rounded-md border p-2" value={profile.bio || ''} onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))} />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-sm text-slate-300">Age group</span>
-          <select className="theme-input w-full rounded-md border p-2" value={profile.age_group || 'all'} onChange={(e) => setProfile((p) => ({ ...p, age_group: e.target.value }))}>
-            <option value="all">All ages</option>
-            <option value="kids">Kids</option>
-            <option value="teens">Teens</option>
-            <option value="adults">Adults</option>
-          </select>
-        </label>
-        <button className="rounded-md bg-neon-cyan px-3 py-2 font-semibold text-slate-900">Save</button>
-        {status && <p className="text-emerald-300">{status}</p>}
-      </form>
-      {profile.avatar_url && isSupportedAvatarUrl(profile.avatar_url) && (
-        <section className="theme-card hidden rounded-xl border p-4 lg:block">
-          <p className="mb-2 text-sm theme-muted">Profile picture preview</p>
-          <img src={profile.avatar_url} alt="Profile preview" className="h-20 w-20 rounded-full object-cover" />
-        </section>
-      )}
-      <section className="hidden gap-3 md:grid-cols-2 lg:grid">
-        <div className="theme-card rounded-xl border p-4">
-          <p className="mb-2 text-sm text-slate-300">Subscribers</p>
-          <div className="space-y-1 text-sm text-slate-200">
-            {followers.length === 0 && <p className="text-slate-400">No subscribers yet.</p>}
-            {followers.slice(0, 10).map((entry) => (
-              <Link key={entry.follower_id} to={`/u/${entry.profiles?.username || 'user'}`} className="block hover:text-white">@{entry.profiles?.username || 'user'}</Link>
-            ))}
-          </div>
-        </div>
-        <div className="theme-card rounded-xl border p-4">
-          <p className="mb-2 text-sm text-slate-300">Subscriptions</p>
-          <div className="space-y-1 text-sm text-slate-200">
-            {following.length === 0 && <p className="text-slate-400">No subscriptions yet.</p>}
-            {following.slice(0, 10).map((entry) => (
-              <Link key={entry.following_id} to={`/u/${entry.profiles?.username || 'user'}`} className="block hover:text-white">@{entry.profiles?.username || 'user'}</Link>
-            ))}
+        <div className="flex items-start gap-4">
+          <div className="h-20 w-20 rounded-full"><ProfileAvatar profile={profile} /></div>
+          <div>
+            <h2 className="text-xl font-bold">{displayName}</h2>
+            <p className="theme-muted">@{handle}</p>
+            <p className="mt-2 text-sm theme-muted">{profile.bio || 'No bio yet.'}</p>
           </div>
         </div>
       </section>
+
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { fetchContent, fetchProfilesBySearch } from '../lib/contentApi'
+import { fetchContent } from '../lib/contentApi'
 
 const categories = ['All', 'MathArt', 'Tutorials', 'Coding', 'Desmos', 'Shorts', 'UnrealCake8']
 const gradients = [
@@ -69,11 +69,9 @@ export default function HomePage() {
   const location = useLocation()
   const navigate = useNavigate()
   const params = new URLSearchParams(location.search)
-  const search = params.get('q') || ''
   const requestedCategory = params.get('category') || 'All'
   const [activeCategory, setActiveCategory] = useState(requestedCategory)
   const [videos, setVideos] = useState([])
-  const [profiles, setProfiles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -83,21 +81,15 @@ export default function HomePage() {
     let cancelled = false
     setLoading(true)
     setError('')
-    Promise.all([
-      fetchContent({ search, category: 'all', feed: 'videos' }),
-      search ? fetchProfilesBySearch(search) : Promise.resolve([]),
-    ]).then(([content, matchedProfiles]) => {
-      if (!cancelled) {
-        setVideos(content || [])
-        setProfiles(matchedProfiles || [])
-      }
+    fetchContent({ category: 'all', feed: 'videos' }).then((content) => {
+      if (!cancelled) setVideos(content || [])
     }).catch(() => {
       if (!cancelled) setError('UVideo could not refresh the catalog. Please try again shortly.')
     }).finally(() => {
       if (!cancelled) setLoading(false)
     })
     return () => { cancelled = true }
-  }, [search])
+  }, [])
 
   const filteredVideos = useMemo(() => {
     if (activeCategory === 'All') return videos
@@ -125,8 +117,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {!search && (
-        <section className="relative mt-6 overflow-hidden rounded-2xl border border-[#3ea6ff]/20 bg-gradient-to-r from-[#111d2a] via-[#102838] to-[#07191f] p-6 sm:p-8">
+      <section className="relative mt-6 overflow-hidden rounded-2xl border border-[#3ea6ff]/20 bg-gradient-to-r from-[#111d2a] via-[#102838] to-[#07191f] p-6 sm:p-8">
           <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#00c8ff]/15 blur-3xl" />
           <div className="relative max-w-2xl">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-[#61d8ff]">Create · Learn · Share</p>
@@ -137,18 +128,6 @@ export default function HomePage() {
            </div>
           </div>
         </section>
-      )}
-
-      {search && <div className="py-6"><h1 className="text-2xl font-black">Results for “{search}”</h1><p className="mt-1 text-sm text-[#aaa]">Videos and creators across UVideo</p></div>}
-
-      {profiles.length > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-4 text-lg font-bold">Channels</h2>
-          <div className="flex gap-3 overflow-x-auto">
-            {profiles.map((profile) => <Link key={profile.id} to={`/u/${profile.username}`} className="flex min-w-60 items-center gap-3 rounded-xl bg-[#181818] p-3 hover:bg-[#272727]"><span className="grid h-11 w-11 place-items-center rounded-full bg-[#3ea6ff] font-black text-black">{(profile.display_name || profile.username || 'U')[0].toUpperCase()}</span><span><strong className="block text-sm">{profile.display_name || profile.username}</strong><small className="text-[#aaa]">@{profile.username}</small></span></Link>)}
-          </div>
-        </section>
-      )}
 
       <section className="mt-8">
         <div className="mb-5 flex items-end justify-between gap-4">

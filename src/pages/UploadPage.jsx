@@ -8,14 +8,20 @@ export default function UploadPage() {
   const [status, setStatus] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [username, setUsername] = useState(user?.user_metadata?.username || '')
+  const [verificationStatus, setVerificationStatus] = useState(null)
+  const [profileLoading, setProfileLoading] = useState(true)
 
   useEffect(() => {
     if (user?.id) {
       async function loadProfile() {
         const profile = await getProfile(user.id)
+        setVerificationStatus(profile?.verification_status || null)
         if (profile?.username) setUsername(profile.username)
+        setProfileLoading(false)
       }
       loadProfile()
+    } else {
+      setProfileLoading(false)
     }
   }, [user?.id])
 
@@ -83,6 +89,20 @@ export default function UploadPage() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  if (profileLoading) {
+    return <div className="mx-auto max-w-3xl p-4 sm:p-8"><p className="theme-muted">Checking verification status…</p></div>
+  }
+
+  if (verificationStatus === 'pending') {
+    return (
+      <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-8">
+        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p>
+        <h1 className="text-3xl font-black">Verification pending</h1>
+        <p className="theme-muted">Uploads are available after your account verification status is no longer pending.</p>
+      </div>
+    )
   }
 
   return (

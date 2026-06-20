@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom'
 import BrandLogo from './BrandLogo'
 import { useAuth } from '../context/useAuth'
 
@@ -21,7 +20,6 @@ const navigation = [
   { to: '/', label: 'Home', icon: 'home' },
   { to: '/?category=Tutorials', label: 'Tutorials', icon: 'tutorials' },
   { to: '/shorts', label: 'Slims', icon: 'shorts' },
-  { to: '/shorts?tab=following', label: 'Subscriptions', icon: 'subscriptions' },
   { to: '/upload', label: 'Upload', icon: 'upload' },
   { to: '/profile', label: 'Profile', icon: 'profile' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
@@ -29,20 +27,7 @@ const navigation = [
 
 export default function AppShell() {
   const { user, signOut } = useAuth()
-  const location = useLocation()
   const navigate = useNavigate()
-  const params = new URLSearchParams(location.search)
-  const [searchText, setSearchText] = useState(params.get('q') || '')
-
-  useEffect(() => {
-    setSearchText(new URLSearchParams(location.search).get('q') || '')
-  }, [location.search])
-
-  function handleSearch(event) {
-    event.preventDefault()
-    const query = searchText.trim()
-    navigate(query ? `/?q=${encodeURIComponent(query)}` : '/')
-  }
 
   async function handleSignOut() {
     await signOut()
@@ -53,20 +38,7 @@ export default function AppShell() {
     <div className="min-h-screen bg-[var(--app-bg)] text-white">
       <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b border-white/10 bg-[#0f0f0f]/95 px-4 backdrop-blur-xl sm:gap-6 lg:px-6">
         <BrandLogo />
-        <form onSubmit={handleSearch} className="mx-auto flex w-full max-w-2xl items-center">
-          <label htmlFor="uvideo-search" className="sr-only">Search UVideo</label>
-          <input
-            id="uvideo-search"
-            type="search"
-            value={searchText}
-            onChange={(event) => setSearchText(event.target.value)}
-            placeholder="Search UVideo"
-            className="h-10 min-w-0 flex-1 rounded-l-full border border-white/15 bg-[#121212] px-4 text-sm text-white outline-none transition placeholder:text-[#888] focus:border-[#3ea6ff]"
-          />
-          <button className="grid h-10 w-12 place-items-center rounded-r-full border border-l-0 border-white/15 bg-[#222] text-[#ddd] transition hover:bg-[#303030]" aria-label="Search">
-            <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="2"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
-          </button>
-        </form>
+        <div className="mx-auto" />
         <Link to="/upload" className="hidden h-10 items-center gap-2 rounded-full bg-[#272727] px-4 text-sm font-bold transition hover:bg-[#3a3a3a] sm:flex">
           <Icon name="upload" /> Upload
         </Link>
@@ -106,7 +78,7 @@ export default function AppShell() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-white/10 bg-[#0f0f0f]/98 lg:hidden" aria-label="Mobile navigation">
-        {navigation.filter((item) => ['Home', 'Shorts', 'Upload', 'Profile', 'Settings'].includes(item.label)).map((item) => (
+        {navigation.filter((item) => ['Home', 'Slims', 'Upload', 'Profile', 'Settings'].includes(item.label)).map((item) => (
           <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({ isActive }) => `flex flex-col items-center justify-center gap-1 text-[10px] ${isActive ? 'text-[#3ea6ff]' : 'text-[#aaa]'}`}>
             <Icon name={item.icon} /><span>{item.label}</span>
           </NavLink>
