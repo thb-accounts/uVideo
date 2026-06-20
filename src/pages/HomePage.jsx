@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { fetchContent } from '../lib/contentApi'
 
-const categories = ['All', 'MathArt', 'Tutorials', 'Coding', 'Desmos', 'Shorts', 'UnrealCake8']
+const categories = ['All', 'Tutorials', 'Coding', 'Shorts', 'General']
 const gradients = [
   'from-[#073b4c] via-[#09647a] to-[#00a8cc]',
   'from-[#14213d] via-[#1d4e89] to-[#3e7bff]',
@@ -121,7 +121,7 @@ export default function HomePage() {
           <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#00c8ff]/15 blur-3xl" />
           <div className="relative max-w-2xl">
             <p className="text-xs font-black uppercase tracking-[0.24em] text-[#61d8ff]">Create · Learn · Share</p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Videos for creators, coders, and MathArt makers.</h1>
+            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Videos for creators, coders, and community makers.</h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-[#b9c5cc] sm:text-base">Discover visual math, practical tutorials, creative coding, and original videos on UVideo.</p>
             <div className="mt-5 flex flex-wrap gap-3">
               <a href="https://unrealcake8.site" className="rounded-full bg-[#3ea6ff] px-5 py-2.5 text-sm font-black text-[#06131c] transition hover:bg-[#70bdff]">Explore the UC8 Foundation ↗</a>

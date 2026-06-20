@@ -35,11 +35,11 @@ export default function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--app-bg)] text-white">
-      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b border-white/10 bg-[#0f0f0f]/95 px-4 backdrop-blur-xl sm:gap-6 lg:px-6">
+    <div className="min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
+      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b bg-[var(--app-panel)]/95 px-4 backdrop-blur-xl sm:gap-6 lg:px-6">
         <BrandLogo />
         <div className="mx-auto" />
-        <Link to="/upload" className="hidden h-10 items-center gap-2 rounded-full bg-[#272727] px-4 text-sm font-bold transition hover:bg-[#3a3a3a] sm:flex">
+        <Link to="/upload" className="hidden h-10 items-center gap-2 rounded-full bg-[var(--app-input)] px-4 text-sm font-bold transition hover:bg-[var(--app-border)] sm:flex">
           <Icon name="upload" /> Upload
         </Link>
         <Link to={user ? '/profile' : '/auth'} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#3ea6ff] to-[#00c8ff] text-sm font-black text-[#06121a]" title={user ? 'Profile' : 'Sign in'}>
@@ -47,7 +47,7 @@ export default function AppShell() {
         </Link>
       </header>
 
-      <aside className="fixed bottom-0 left-0 top-16 z-40 hidden w-60 flex-col border-r border-white/10 bg-[#0f0f0f] p-3 lg:flex">
+      <aside className="fixed bottom-0 left-0 top-16 z-40 hidden w-60 flex-col border-r bg-[var(--app-panel)] p-3 lg:flex">
         <nav className="space-y-1" aria-label="Main navigation">
           {navigation.map((item) => item.href ? (
             <a key={item.label} href={item.href} className="flex items-center gap-4 rounded-xl px-3 py-2.5 text-sm font-medium text-[#ddd] transition hover:bg-[#272727] hover:text-white">
@@ -59,12 +59,8 @@ export default function AppShell() {
             </NavLink>
           ))}
         </nav>
-        <div className="mt-4 border-t border-white/10 pt-4">
-          <p className="px-3 text-xs font-bold uppercase tracking-[0.18em] text-[#777]">Partners</p>
-          <a href="https://mathart.unrealcake8.site/tips/" className="mt-2 block rounded-xl px-3 py-2 text-sm text-[#aaa] hover:bg-[#272727] hover:text-white">MathArt Tips ↗</a>
-        </div>
-        <div className="mt-auto border-t border-white/10 px-3 pt-4">
-          <p className="text-xs leading-relaxed text-[#777]">Videos for creators, coders, and MathArt makers.</p>
+        <div className="mt-auto border-t px-3 pt-4">
+          <p className="text-xs leading-relaxed text-[#777]">Videos for creators, coders, and community makers.</p>
           {user ? (
             <button onClick={handleSignOut} className="mt-3 text-xs font-semibold text-[#aaa] hover:text-white">Sign out</button>
           ) : (
@@ -77,7 +73,7 @@ export default function AppShell() {
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-white/10 bg-[#0f0f0f]/98 lg:hidden" aria-label="Mobile navigation">
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t bg-[var(--app-panel)]/98 lg:hidden" aria-label="Mobile navigation">
         {navigation.filter((item) => ['Home', 'Slims', 'Upload', 'Profile', 'Settings'].includes(item.label)).map((item) => (
           <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({ isActive }) => `flex flex-col items-center justify-center gap-1 text-[10px] ${isActive ? 'text-[#3ea6ff]' : 'text-[#aaa]'}`}>
             <Icon name={item.icon} /><span>{item.label}</span>

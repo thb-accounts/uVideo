@@ -9,7 +9,7 @@
   "orientation": "any",
   "background_color": "#0f0f0f",
   "theme_color": "#0f0f0f",
-  "description": "Videos for creators, coders, and MathArt makers from UnrealCake8.",
+  "description": "Videos for creators, coders, and community makers.",
   "categories": ["education", "entertainment", "video"],
   "icons": [{ "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" }]
 }

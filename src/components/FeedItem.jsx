@@ -184,7 +184,7 @@ function DeleteModal({ onConfirm, onCancel, loading }) {
 }
 
 // ─── Main FeedItem ────────────────────────────────────────────────────────────
-export default function FeedItem({ item, isActive, onDeleted }) {
+export default function FeedItem({ item, isActive, onDeleted, forcePaused = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -199,8 +199,8 @@ export default function FeedItem({ item, isActive, onDeleted }) {
 
   // Reset pause state when becoming active/inactive
   useEffect(() => {
-    setIsPaused(false)
-  }, [isActive])
+    if (!forcePaused) setIsPaused(false)
+  }, [forcePaused, isActive])
 
   // Fetch real like status and counts on mount
   useEffect(() => {
@@ -261,7 +261,7 @@ export default function FeedItem({ item, isActive, onDeleted }) {
         {/* Media */}
         <div
           className="absolute inset-0 flex cursor-pointer items-center justify-center"
-          onClick={() => setIsPaused(!isPaused)}
+          onClick={() => { if (!forcePaused) setIsPaused(!isPaused) }}
         >
           <div
             className="relative h-full w-full max-w-[56.25vh] overflow-hidden bg-black"
@@ -270,11 +270,11 @@ export default function FeedItem({ item, isActive, onDeleted }) {
             <FeedPlayer
               item={item}
               isActive={isActive}
-              isPaused={isPaused}
+              isPaused={isPaused || forcePaused}
               settings={settings}
             />
           </div>
-          {isPaused && (
+          {(isPaused || forcePaused) && (
             <div className="absolute inset-0 flex items-center justify-center bg-black/20 z-30">
               <div className="h-16 w-16 flex items-center justify-center rounded-full bg-black/40 text-white text-3xl">
                 ▶️

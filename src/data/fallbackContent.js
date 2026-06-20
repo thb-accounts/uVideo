@@ -1,11 +1,11 @@
 export const fallbackContent = [
   {
     id: 'fallback-video-1',
-    title: 'Plotting a Solar System with MathArt',
-    type: 'video', category: 'MathArt',
+    title: 'Plotting a Solar System with Creative Coding',
+    type: 'video', category: 'Coding',
     description: 'Build a vivid orbital scene with equations, color, and a few creative constraints.',
     media_url: 'https://www.youtube.com/embed/libKVRa01L8', difficulty: 'Beginner', points: 20,
-    is_trending: true, username: 'mathart', views: '1.8K', created_at: '2026-05-28T12:00:00Z',
+    is_trending: true, username: 'creator_lab', views: '1.8K', created_at: '2026-05-28T12:00:00Z',
   },
   {
     id: 'fallback-lesson-1',
@@ -13,11 +13,11 @@ export const fallbackContent = [
     type: 'lesson', category: 'Coding',
     description: 'A practical introduction to easing, timing, and expressive motion for visual projects.',
     media_url: 'https://www.youtube.com/embed/IlU-zDU6aQ0', difficulty: 'Beginner', points: 15,
-    is_trending: false, username: 'unrealcake8', views: '942', created_at: '2026-05-20T12:00:00Z',
+    is_trending: false, username: 'creative_coding', views: '942', created_at: '2026-05-20T12:00:00Z',
   },
   {
     id: 'fallback-video-3',
-    title: 'Desmos Shading Tricks for Better Graph Art',
+    title: 'Shading Tricks for Better Visual Art',
     type: 'video', category: 'Tutorial',
     description: 'Layer inequalities and color to add depth to your next graph-art project.',
     media_url: '', difficulty: 'Intermediate', points: 30,
@@ -25,8 +25,8 @@ export const fallbackContent = [
   },
   {
     id: 'fallback-video-4',
-    title: 'Behind the Build: A MathArt Creator Workflow',
-    type: 'video', category: 'UnrealCake8',
+    title: 'Behind the Build: A Creator Workflow',
+    type: 'video', category: 'General',
     description: 'From sketch to equations: a lightweight workflow for shipping creative math projects.',
     media_url: '', difficulty: 'All levels', points: 20,
     is_trending: false, username: 'uvideo', views: '684', created_at: '2026-04-30T12:00:00Z',
@@ -37,7 +37,7 @@ export const fallbackContent = [
     type: 'short', category: 'Shorts',
     description: 'Small shortcuts that make a big difference while creating.',
     media_url: '', difficulty: 'Beginner', points: 10,
-    is_trending: false, username: 'mathart_tips', views: '5.7K', created_at: '2026-04-22T12:00:00Z',
+    is_trending: false, username: 'creator_tips', views: '5.7K', created_at: '2026-04-22T12:00:00Z',
   },
   {
     id: 'fallback-video-6',

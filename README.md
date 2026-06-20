@@ -1,6 +1,6 @@
 # UVideo
 
-UVideo is a lightweight video platform for creators, coders, and MathArt makers. It is an independent UnrealCake8 project hosted separately from MathArt at **https://uvideo.unrealcake8.site**.
+UVideo is a lightweight video platform for creators, coders, and community makers hosted at **https://uvideo.unrealcake8.site**.
 
 > **Archive note:** UVideo evolved from the original HoloStem prototype.
 
@@ -12,9 +12,8 @@ UVideo is a lightweight video platform for creators, coders, and MathArt makers.
 - Authenticated creator profiles, settings, moderation tools, and uploads.
 - Cloudinary file uploads with direct MP4 fallback.
 - Supabase-backed videos, profiles, social data, and moderation.
-- Direct partnership links to [MathArt](https://mathart.unrealcake8.site) and [MathArt Tips](https://mathart.unrealcake8.site/tips/).
 
-UVideo is not part of the MathArt calculator site and should remain deployed on its own domain. MathArt is a partner UnrealCake8 project. UVideo and MathArt are not affiliated with Desmos.
+UVideo should remain deployed on its own domain.
 
 ## Routes
 
@@ -66,4 +65,4 @@ The repository includes `vercel.json` and can be deployed directly to Vercel:
 5. Point the domain's DNS record to Vercel and redeploy after environment variables are saved.
 6. Set the production auth redirect URL to `https://uvideo.unrealcake8.site` in Supabase.
 
-Do not configure this project under `mathart.unrealcake8.site`; that host remains dedicated to MathArt.
+Deploy this project only on its configured UVideo host.
