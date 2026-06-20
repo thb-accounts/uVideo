@@ -120,7 +120,7 @@ export default function UploadPage() {
             <option value="video">Regular video</option>
             <option value="short">Slim / short</option>
           </select>
-          <select className="theme-input rounded-xl border px-3 py-2" name="category" defaultValue="MathArt"><option>MathArt</option><option>Tutorial</option><option>Coding</option><option>Desmos</option><option>Shorts</option><option>UnrealCake8</option><option>General</option></select>
+          <select className="theme-input rounded-xl border px-3 py-2" name="category" defaultValue="General"><option>General</option><option>Tutorial</option><option>Coding</option><option>Shorts</option></select>
           <input className="theme-input rounded-xl border px-3 py-2" name="points" type="number" min="5" defaultValue="20" />
         </div>
         <label className="grid gap-1 text-sm font-semibold">

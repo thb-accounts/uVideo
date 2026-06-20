@@ -1,4 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/useAuth'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   fetchContent,
@@ -10,8 +11,10 @@ import {
   acknowledgeLimit,
   acknowledgeSessionPrompt,
   addExtension,
+  applyGuestCode,
   addUsageSeconds,
   getDayString,
+  getGuestAllowedMinutes,
   markVideoSeen,
   readUsageSettings,
   readUsageState,
@@ -28,9 +31,13 @@ function MindfulModal({
   onClose,
   onTakeBreak,
   onContinue,
+  isGuestLocked = false,
+  onApplyCode,
 }) {
   const [confirming, setConfirming] = useState(false)
   const [countdown, setCountdown] = useState(10)
+  const [code, setCode] = useState('')
+  const [codeMessage, setCodeMessage] = useState('')
 
   useEffect(() => {
     if (!confirming) return
@@ -56,28 +63,39 @@ function MindfulModal({
         : 'You reached your watch goal'
 
   const body =
-    type === 'eighty'
-      ? `Today: ${Math.round(usage.minutesUsed)} / ${settings.dailyLimitMinutes} minutes.`
-      : type === 'session'
-        ? `You watched ${usage.sessionVideos} videos in this session.`
-        : `Today: ${Math.round(usage.minutesUsed)} / ${settings.dailyLimitMinutes + usage.extraMinutes} minutes.`
+    type === 'guest-limit'
+      ? `Guests can watch Slims for ${settings.dailyLimitMinutes} minutes today. Enter a code ending or starting with IB1, AP14, or QB2 to unlock more time.`
+      : type === 'eighty'
+        ? `Today: ${Math.round(usage.minutesUsed)} / ${settings.dailyLimitMinutes} minutes.`
+        : type === 'session'
+          ? `You watched ${usage.sessionVideos} videos in this session.`
+          : `Today: ${Math.round(usage.minutesUsed)} / ${settings.dailyLimitMinutes + usage.extraMinutes} minutes.`
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="theme-card w-full max-w-md rounded-2xl border p-4" onClick={(event) => event.stopPropagation()}>
         <p className="text-lg font-semibold">{title}</p>
         <p className="mt-1 text-sm theme-muted">{body}</p>
-        <div className="mt-4 grid gap-2">
-          <button className="rounded-full bg-white/10 px-4 py-2 text-sm" onClick={onTakeBreak}>Take a short break</button>
-          <button className="rounded-full brand-button px-4 py-2 text-sm font-semibold" onClick={handleConfirmContinue}>
-            {confirming
-              ? countdown > 0
-                ? `Breathe ${countdown}s to continue`
-                : `Continue for ${settings.extensionMinutes} more minutes`
-              : `Continue mindfully (+${settings.extensionMinutes} min)`}
-          </button>
-          <button className="rounded-full border border-white/20 px-4 py-2 text-sm" onClick={onClose}>Done for now</button>
-        </div>
+        {isGuestLocked ? (
+          <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); const result = onApplyCode(code); setCodeMessage(result.message) }}>
+            <input className="theme-input rounded-xl border px-3 py-2 text-sm" value={code} onChange={(event) => setCode(event.target.value)} placeholder="Enter time code" />
+            {codeMessage && <p className="text-xs theme-muted">{codeMessage}</p>}
+            <button className="rounded-full brand-button px-4 py-2 text-sm font-semibold" type="submit">Apply code</button>
+            <Link className="rounded-full border border-white/20 px-4 py-2 text-center text-sm" to="/auth">Sign in for unrestricted Slims</Link>
+          </form>
+        ) : (
+          <div className="mt-4 grid gap-2">
+            <button className="rounded-full bg-white/10 px-4 py-2 text-sm" onClick={onTakeBreak}>Take a short break</button>
+            <button className="rounded-full brand-button px-4 py-2 text-sm font-semibold" onClick={handleConfirmContinue}>
+              {confirming
+                ? countdown > 0
+                  ? `Breathe ${countdown}s to continue`
+                  : `Continue for ${settings.extensionMinutes} more minutes`
+                : `Continue mindfully (+${settings.extensionMinutes} min)`}
+            </button>
+            <button className="rounded-full border border-white/20 px-4 py-2 text-sm" onClick={onClose}>Done for now</button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -121,6 +139,7 @@ function UsageOnboarding({ onSave }) {
 }
 
 export default function DashboardPage() {
+  const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [feed, setFeed] = useState([])
@@ -134,11 +153,14 @@ export default function DashboardPage() {
   const containerRef = useRef(null)
   const tab = new URLSearchParams(location.search).get('tab') || 'for-you'
   const dayKey = getDayString()
+  const isGuest = !user
+  const guestLimitMinutes = getGuestAllowedMinutes(dayKey)
+  const effectiveDailyLimit = isGuest ? guestLimitMinutes : usageSettings.dailyLimitMinutes
 
   const usageRatio = useMemo(() => {
-    const total = usageSettings.dailyLimitMinutes + usageState.extraMinutes
+    const total = effectiveDailyLimit + (isGuest ? 0 : usageState.extraMinutes)
     return total > 0 ? usageState.minutesUsed / total : 0
-  }, [usageSettings.dailyLimitMinutes, usageState.extraMinutes, usageState.minutesUsed])
+  }, [effectiveDailyLimit, isGuest, usageState.extraMinutes, usageState.minutesUsed])
 
   useEffect(() => {
     let cancelled = false
@@ -204,16 +226,20 @@ export default function DashboardPage() {
   }, [activeIndex, dayKey, feed])
 
   useEffect(() => {
-    if (feed.length === 0) return undefined
+    if (feed.length === 0 || modalType === 'guest-limit') return undefined
     const timer = setInterval(() => {
       const next = addUsageSeconds(5, dayKey)
       setUsageState(next)
     }, 5000)
     return () => clearInterval(timer)
-  }, [dayKey, feed.length, tab])
+  }, [dayKey, feed.length, modalType, tab])
 
   useEffect(() => {
     if (modalType) return
+    if (isGuest && usageRatio >= 1) {
+      setTimeout(() => setModalType('guest-limit'), 0)
+      return
+    }
     if (!usageSettings.onboarded) return
     if (usageRatio >= 1 && !usageState.limitPromptShown) {
       setTimeout(() => setModalType('limit'), 0)
@@ -229,7 +255,7 @@ export default function DashboardPage() {
       setTimeout(() => setModalType('session'), 0)
       acknowledgeSessionPrompt(usageState.sessionVideos, dayKey)
     }
-  }, [dayKey, modalType, usageRatio, usageSettings.onboarded, usageSettings.videosPerSession, usageState.limitPromptShown, usageState.prompt80Shown, usageState.sessionPromptShownAt, usageState.sessionVideos])
+  }, [dayKey, isGuest, modalType, usageRatio, usageSettings.onboarded, usageSettings.videosPerSession, usageState.limitPromptShown, usageState.prompt80Shown, usageState.sessionPromptShownAt, usageState.sessionVideos])
 
   function handleDeleted(id) {
     setFeed((prev) => prev.filter((item) => item.id !== id))
@@ -270,6 +296,14 @@ export default function DashboardPage() {
     const next = addExtension(usageSettings.extensionMinutes, dayKey)
     setUsageState(next)
     setModalType('')
+  }
+
+  function handleApplyCode(code) {
+    const result = applyGuestCode(code, dayKey)
+    if (!result.ok) return { message: result.message }
+    setUsageSettings((current) => ({ ...current }))
+    setModalType('')
+    return { message: `${result.grant.token} accepted. You now have ${result.grant.minutes} minutes today.` }
   }
 
   function handleTakeBreak() {
@@ -319,20 +353,22 @@ export default function DashboardPage() {
     <>
       {!usageSettings.onboarded && <div className="hidden lg:block"><UsageOnboarding onSave={handleSaveOnboarding} /></div>}
       {modalType && (
-        <div className="hidden lg:block">
+        <div>
         <MindfulModal
           type={modalType}
-          settings={usageSettings}
+          settings={{ ...usageSettings, dailyLimitMinutes: effectiveDailyLimit }}
           usage={usageState}
           onClose={() => setModalType('')}
           onTakeBreak={handleTakeBreak}
           onContinue={handleContinue}
+          isGuestLocked={modalType === 'guest-limit'}
+          onApplyCode={handleApplyCode}
         />
         </div>
       )}
 
       <div className="pointer-events-none fixed left-3 top-3 z-30 hidden rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur lg:block">
-        {Math.round(usageState.minutesUsed)}m / {usageSettings.dailyLimitMinutes + usageState.extraMinutes}m
+        {Math.round(usageState.minutesUsed)}m / {effectiveDailyLimit + (isGuest ? 0 : usageState.extraMinutes)}m
       </div>
       <button
         onClick={() => cycleMode(1)}
@@ -359,6 +395,7 @@ export default function DashboardPage() {
               item={item}
               isActive={index === activeIndex}
               onDeleted={handleDeleted}
+              forcePaused={modalType === 'guest-limit'}
             />
           </div>
         ))}

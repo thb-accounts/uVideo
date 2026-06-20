@@ -1,5 +1,14 @@
 const SETTINGS_KEY = 'holostem_usage_settings'
 const STATE_KEY_PREFIX = 'holostem_usage_state_'
+const GUEST_CODE_KEY_PREFIX = 'holostem_guest_code_'
+
+export const GUEST_DEFAULT_LIMIT_MINUTES = 30
+
+const guestCodeDurations = [
+  { token: 'IB1', minutes: 35 },
+  { token: 'AP14', minutes: 60 },
+  { token: 'QB2', minutes: 40 },
+]
 
 const defaultSettings = {
   onboarded: false,
@@ -133,6 +142,34 @@ export function acknowledgeSessionPrompt(atCount, dayKey = getDayKey()) {
   const next = { ...current, sessionPromptShownAt: atCount }
   saveUsageState(next, dayKey)
   return next
+}
+
+export function getGuestCodeGrant(dayKey = getDayKey()) {
+  if (typeof window === 'undefined') return null
+  try {
+    return JSON.parse(localStorage.getItem(`${GUEST_CODE_KEY_PREFIX}${dayKey}`))
+  } catch {
+    return null
+  }
+}
+
+export function getGuestAllowedMinutes(dayKey = getDayKey()) {
+  return getGuestCodeGrant(dayKey)?.minutes || GUEST_DEFAULT_LIMIT_MINUTES
+}
+
+export function applyGuestCode(code, dayKey = getDayKey()) {
+  const normalized = String(code || '').trim().toUpperCase()
+  const match = guestCodeDurations.find(({ token }) => normalized.startsWith(token) || normalized.endsWith(token))
+
+  if (!match) {
+    return { ok: false, message: 'Code must start or end with IB1, AP14, or QB2.' }
+  }
+
+  const grant = { code: normalized, token: match.token, minutes: match.minutes, appliedAt: new Date().toISOString() }
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(`${GUEST_CODE_KEY_PREFIX}${dayKey}`, JSON.stringify(grant))
+  }
+  return { ok: true, grant }
 }
 
 export function getDayString() {

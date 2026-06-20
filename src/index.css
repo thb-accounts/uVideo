@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --brand-black: #0f0f0f;
   --brand-olive: #3ea6ff;
   --brand-leaf: #168bd1;
@@ -20,6 +20,20 @@
   --app-muted: #aaaaaa;
   --app-border: rgba(255, 255, 255, 0.11);
   --app-input: #121212;
+}
+
+:root.light {
+  color-scheme: light;
+  --brand-black: #f7fbff;
+  --brand-cream: #07131b;
+  --brand-cream-rgb: 7 19 27;
+  --app-bg: #f6f8fb;
+  --app-panel: #ffffff;
+  --app-card: #ffffff;
+  --app-text: #07131b;
+  --app-muted: #5f6b76;
+  --app-border: rgba(7, 19, 27, 0.12);
+  --app-input: #ffffff;
 }
 
 * { box-sizing: border-box; }
@@ -40,7 +54,7 @@ a { color: inherit; text-decoration: none; }
 .brand-button { background: var(--brand-olive); color: #07131b; }
 .brand-button:hover { background: #70bdff; }
 .brand-button-soft { background: rgba(62, 166, 255, 0.14); color: #8ed0ff; }
-.brand-outline { border-color: rgba(255, 255, 255, 0.16); }
+.brand-outline { border-color: var(--app-border); }
 .brand-avatar { background: linear-gradient(135deg, #3ea6ff, #00c8ff); color: #06131b; }
 .brand-plus { background: #3ea6ff; color: #06131b; box-shadow: -7px 0 0 #176fa8, 7px 0 0 #00c8ff; }
 .brand-spinner { border-color: #3ea6ff; border-top-color: transparent; }
@@ -53,3 +67,7 @@ a { color: inherit; text-decoration: none; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: #0f0f0f; }
 ::-webkit-scrollbar-thumb { background: #3a3a3a; border: 2px solid #0f0f0f; border-radius: 999px; }
+
+:root.light .brand-surface-mobile { background: #ffffff; color: #07131b; }
+:root.light ::-webkit-scrollbar-track { background: #edf2f7; }
+:root.light ::-webkit-scrollbar-thumb { background: #cbd5e1; border-color: #edf2f7; }
