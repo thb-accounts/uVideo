@@ -11,9 +11,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "db:generate": "prisma generate",
-    "db:push": "prisma db push"
+    "db:push": "prisma db push",
+    "test:unit": "node --test server/tests/*.test.js"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1072.0",
+    "@aws-sdk/s3-request-presigner": "^3.1072.0",
+    "@didit-protocol/sdk-web": "^0.2.1",
     "@prisma/client": "^6.19.0",
     "@supabase/supabase-js": "^2.103.3",
     "bcryptjs": "^3.0.3",

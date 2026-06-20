@@ -37,7 +37,7 @@ export async function fetchContentById(id) {
 export async function fetchVideosByUsername(username, userId = '', { includeUnpublished = false } = {}) {
   if (!hasSupabaseConfig) {
     return fallbackContent
-      .filter((item) => item.username === username || (userId && item.user_id === userId))
+      .filter((item) => item.username?.toLowerCase() === username?.toLowerCase() || (userId && item.user_id === userId))
       .sort((a, b) => Number(Boolean(b.is_pinned)) - Number(Boolean(a.is_pinned)))
   }
 
@@ -46,7 +46,7 @@ export async function fetchVideosByUsername(username, userId = '', { includeUnpu
   if (userId) {
     query = query.eq('user_id', userId)
   } else {
-    query = query.eq('username', username)
+    query = query.ilike('username', username)
   }
 
   if (includeUnpublished) {
@@ -276,31 +276,62 @@ export async function getProfile(userId) {
 }
 
 export async function getProfileByUsername(username) {
-  if (!username) return null
+  const normalizedUsername = username?.trim()
+  if (!normalizedUsername) return null
+
   if (!hasSupabaseConfig) {
-    const firstVideo = fallbackContent.find((item) => item.username === username)
+    const firstVideo = fallbackContent.find(
+      (item) => item.username?.toLowerCase() === normalizedUsername.toLowerCase(),
+    )
     return firstVideo
-      ? { username, display_name: username, bio: 'Demo creator profile' }
+      ? {
+          id: firstVideo.user_id || null,
+          username: firstVideo.username,
+          display_name: firstVideo.username,
+          bio: 'Demo creator profile',
+        }
       : null
   }
-  const { data } = await supabase
+
+  const { data: profiles, error: profileError } = await supabase
     .from('profiles')
     .select('*')
-    .eq('username', username)
-    .maybeSingle()
-  return data
-}
+    .ilike('username', normalizedUsername)
+    .limit(1)
 
-export async function getUserIdByUsername(username) {
-  if (!username) return null
-  if (!hasSupabaseConfig) return null
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id')
-    .eq('username', username)
+  if (profileError) throw profileError
+  if (profiles?.[0]) return profiles[0]
+
+  // Older content can exist without a matching profile row. Preserve those
+  // creator pages and use the content owner to recover profile data when possible.
+  const { data: content, error: contentError } = await supabase
+    .from('contents')
+    .select('user_id, username')
+    .ilike('username', normalizedUsername)
+    .order('created_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
-  if (error) throw error
-  return data?.id ?? null
+
+  if (contentError) throw contentError
+  if (!content) return null
+
+  if (content.user_id) {
+    const { data: ownerProfile, error: ownerError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', content.user_id)
+      .maybeSingle()
+
+    if (ownerError) throw ownerError
+    if (ownerProfile) return ownerProfile
+  }
+
+  return {
+    id: content.user_id || null,
+    username: content.username || normalizedUsername,
+    display_name: content.username || normalizedUsername,
+    bio: '',
+  }
 }
 
 export async function fetchProfilesBySearch(search = '', { limit = 8 } = {}) {
@@ -550,4 +581,39 @@ export async function fetchProfilesByIds(userIds = []) {
     .in('id', ids)
   if (error) throw error
   return Object.fromEntries((data || []).map((row) => [row.id, row]))
+}
+
+// ─── UVideo API MVP flows ─────────────────────────────────────────────────────
+
+export async function getSupabaseAccessToken() {
+  if (!hasSupabaseConfig || !supabase) {
+    throw new Error('Please sign in before uploading.')
+  }
+
+  const { data, error } = await supabase.auth.getSession()
+  if (error) throw new Error('Please sign in before uploading.')
+
+  const token = data?.session?.access_token
+  if (!token) throw new Error('Please sign in before uploading.')
+  return token
+}
+
+export async function requestVideoUpload({ title, description, fileName, contentType }) {
+  const { apiRequest } = await import('./apiClient')
+  return apiRequest('/videos/uploads/presign', { method: 'POST', token: await getSupabaseAccessToken(), body: { title, description, fileName, contentType } })
+}
+
+export async function completeVideoUpload(videoId) {
+  const { apiRequest } = await import('./apiClient')
+  return apiRequest(`/videos/${videoId}/uploads/complete`, { method: 'POST', token: await getSupabaseAccessToken() })
+}
+
+export async function fetchQuickChatPhrases() {
+  const { apiRequest } = await import('./apiClient')
+  return apiRequest('/quick-chat/phrases')
+}
+
+export async function suggestQuickChatPhrase(payload) {
+  const { apiRequest } = await import('./apiClient')
+  return apiRequest('/quick-chat/suggestions', { method: 'POST', token: await getSupabaseAccessToken(), body: payload })
 }
