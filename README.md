@@ -10,7 +10,7 @@ UVideo is a lightweight video platform for creators, coders, and MathArt makers.
 - A separate vertical Shorts feed at `/shorts`.
 - Individual video pages with likes, comments, sharing, creator channels, subscriptions, and recommendations.
 - Authenticated creator profiles, settings, moderation tools, and uploads.
-- Bunny.net file uploads with direct MP4 fallback.
+- Cloudinary file uploads with direct MP4 fallback.
 - Supabase-backed videos, profiles, social data, and moderation.
 - Direct partnership links to [MathArt](https://mathart.unrealcake8.site) and [MathArt Tips](https://mathart.unrealcake8.site/tips/).
 
@@ -37,7 +37,7 @@ The legacy `/dashboard` URL redirects to the new homepage.
    ```bash
    npm install
    ```
-2. Copy `.env.example` to `.env` and add the desired Supabase/Bunny configuration.
+2. Copy `.env.example` to `.env` and add the desired Supabase/Cloudinary configuration.
 3. Start the Vite app:
    ```bash
    npm run dev
@@ -53,14 +53,14 @@ Without Supabase environment variables, the frontend uses a small UVideo demo ca
 
 The existing Supabase migration filenames are intentionally retained for compatibility. Run `supabase/001_holostem_schema.sql` in Supabase, then optionally run `supabase/002_storage_policies.sql` for the public `videos` bucket. Existing `user_follows` database naming is also retained internally, while the UI presents the feature as **Subscriptions**.
 
-For Bunny.net uploads, configure the variables documented in `.env.example`. Authenticated creators can upload a file through `/api/bunny/upload` or publish a direct `.mp4` URL.
+For Cloudinary uploads, configure the variables documented in `.env.example`. Authenticated creators can upload a file through `/api/cloudinary/upload` or publish a direct `.mp4` URL.
 
 ## Production deployment
 
 The repository includes `vercel.json` and can be deployed directly to Vercel:
 
 1. Import the GitHub repository into Vercel.
-2. Configure the Supabase, auth redirect, and Bunny.net environment variables from `.env.example`.
+2. Configure the Supabase, auth redirect, and Cloudinary environment variables from `.env.example`.
 3. Build with `npm run build` and use Vite's default `dist` output.
 4. Add **uvideo.unrealcake8.site** as the production custom domain.
 5. Point the domain's DNS record to Vercel and redeploy after environment variables are saved.
