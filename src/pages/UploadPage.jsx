@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createContent, getProfile } from '../lib/contentApi'
-import { uploadVideoToBunny } from '../lib/bunnyUpload'
+import { uploadVideoToCloudinary } from '../lib/cloudinaryUpload'
 import { useAuth } from '../context/useAuth'
 
 export default function UploadPage() {
@@ -47,7 +47,7 @@ export default function UploadPage() {
     }
 
     setSubmitting(true)
-    setStatus(videoFile && videoFile.size > 0 ? 'Uploading your video to Bunny.net...' : 'Publishing your video...')
+    setStatus(videoFile && videoFile.size > 0 ? 'Uploading your video to Cloudinary...' : 'Publishing your video...')
 
     try {
       if (!username) {
@@ -55,8 +55,8 @@ export default function UploadPage() {
       }
 
       if (videoFile && videoFile.size > 0) {
-        mediaUrl = await uploadVideoToBunny(videoFile)
-        setStatus('Publishing your Bunny.net video...')
+        mediaUrl = await uploadVideoToCloudinary(videoFile)
+        setStatus('Publishing your Cloudinary video...')
       }
 
       await createContent({
@@ -106,7 +106,7 @@ export default function UploadPage() {
             name="video_file"
             type="file"
           />
-          <span className="text-xs font-normal theme-muted">Uploaded videos are stored and delivered through Bunny.net.</span>
+          <span className="text-xs font-normal theme-muted">Uploaded videos are stored and delivered through Cloudinary.</span>
         </label>
         <label className="grid gap-1 text-sm font-semibold">
           Backup MP4 link
