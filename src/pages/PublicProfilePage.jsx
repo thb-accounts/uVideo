@@ -100,6 +100,7 @@ export default function PublicProfilePage() {
   const [following, setFollowing] = useState([])
   const [activeSocialList, setActiveSocialList] = useState('')
   const [activeTab, setActiveTab] = useState(0)
+  const [loadError, setLoadError] = useState('')
   const isSelf = Boolean(user?.id && profileUserId && user.id === profileUserId)
   const totalLikes = videos.reduce((sum, video) => sum + Number(video.like_count || 0), 0)
   const displayName = profile?.display_name || username || 'Creator'
@@ -113,22 +114,32 @@ export default function PublicProfilePage() {
   ]
 
   useEffect(() => {
+    let cancelled = false
     async function load() {
-      const [profileData, userId] = await Promise.all([
-        getProfileByUsername(username),
-        getUserIdByUsername(username),
-      ])
-      const videosData = await fetchVideosByUsername(profileData?.username || username, userId)
-      setProfile(profileData)
-      setVideos(videosData)
-      setProfileUserId(userId)
+      setLoadError('')
+      try {
+        const [profileData, userId] = await Promise.all([
+          getProfileByUsername(username),
+          getUserIdByUsername(username),
+        ])
+        const videosData = await fetchVideosByUsername(profileData?.username || username, userId)
+        if (cancelled) return
+        setProfile(profileData)
+        setVideos(videosData)
+        setProfileUserId(userId)
+      } catch (error) {
+        console.error('Profile load failed:', error)
+        if (!cancelled) setLoadError('Unable to load this creator profile right now.')
+      }
     }
     load()
+    return () => { cancelled = true }
   }, [username])
 
   useEffect(() => {
     if (!profileUserId) return
     async function loadSocialStats() {
+      try {
       const [followerCount, followingCountValue, followersData, followingData] = await Promise.all([
         fetchFollowerCount(profileUserId),
         fetchFollowingCount(profileUserId),
@@ -144,6 +155,9 @@ export default function PublicProfilePage() {
         setIsFollowing(status)
       } else {
         setIsFollowing(false)
+      }
+      } catch (error) {
+        console.error('Profile social stats failed:', error)
       }
     }
     loadSocialStats()
@@ -165,6 +179,7 @@ export default function PublicProfilePage() {
 
   return (
     <div className="theme-app-bg space-y-4 p-4 lg:p-4">
+      {loadError && <p className="rounded-xl border border-red-400/20 bg-red-400/10 p-3 text-sm text-red-200">{loadError}</p>}
       <section className="-mx-4 -mt-4 min-h-screen bg-[#121212] px-4 pb-28 pt-20 text-white lg:hidden">
         <div className="flex flex-col items-center text-center">
           <div className="relative h-20 w-20 rounded-full border border-white/20 bg-[#151a17]">
@@ -285,7 +300,7 @@ export default function PublicProfilePage() {
 
       <section className="hidden grid-cols-1 gap-3 sm:grid-cols-2 lg:grid lg:grid-cols-3">
         {videos.map((video) => (
-          <Link key={video.id} to={`/content/${video.id}`} className="theme-card rounded-xl border p-3 hover:bg-black/10">
+          <Link key={video.id} to={`/video/${video.id}`} className="theme-card rounded-xl border p-3 hover:bg-black/10">
             <p className="text-xs uppercase theme-muted">{video.type}</p>
             <p className="font-semibold">{video.title}</p>
             <p className="text-sm theme-muted line-clamp-2">{video.description}</p>

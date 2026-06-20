@@ -3,14 +3,31 @@ import { hasSupabaseConfig, supabase } from './supabase'
 
 // ─── Content ──────────────────────────────────────────────────────────────────
 
-export async function fetchContent({ search = '', category = 'all' } = {}) {
-  if (!hasSupabaseConfig) return fallbackContent
+export function isShortContent(item = {}) {
+  const type = String(item.type || '').trim().toLowerCase()
+  const category = String(item.category || '').trim().toLowerCase()
+  return type === 'short' || type === 'slim' || category === 'shorts' || category === 'slims'
+}
+
+export async function fetchContent({ search = '', category = 'all', feed = 'videos' } = {}) {
+  if (!hasSupabaseConfig) {
+    const content = feed === 'shorts'
+      ? fallbackContent.filter(isShortContent)
+      : feed === 'all'
+        ? fallbackContent
+        : fallbackContent.filter((item) => !isShortContent(item))
+    return content
+  }
 
   let query = supabase
     .from('contents')
     .select('*')
     .or('status.eq.published,status.is.null')
     .order('created_at', { ascending: false })
+
+  if (feed === 'shorts') {
+    query = query.or('type.eq.short,type.eq.slim,category.eq.Shorts,category.eq.Slims')
+  }
 
   if (category !== 'all') query = query.eq('type', category)
   if (search.trim()) {
@@ -20,7 +37,9 @@ export async function fetchContent({ search = '', category = 'all' } = {}) {
 
   const { data, error } = await query
   if (error) throw error
-  return data
+  const content = data ?? []
+  if (feed === 'videos') return content.filter((item) => !isShortContent(item))
+  return content
 }
 
 export async function fetchContentById(id) {

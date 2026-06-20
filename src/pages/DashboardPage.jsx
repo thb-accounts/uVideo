@@ -199,7 +199,7 @@ export default function DashboardPage() {
 
     async function hydrateFeed() {
       const [browseData, profilesData] = await Promise.all([
-        fetchContent({ search: searchQuery, category: 'all' }),
+        fetchContent({ search: searchQuery, category: 'all', feed: 'shorts' }),
         searchQuery.trim() ? fetchProfilesBySearch(searchQuery) : Promise.resolve([]),
       ])
       if (!cancelled) setProfileResults(profilesData)
