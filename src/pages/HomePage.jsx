@@ -153,7 +153,7 @@ export default function HomePage() {
       <section className="mt-8">
         <div className="mb-5 flex items-end justify-between gap-4">
           <div><h2 className="text-xl font-black">{activeCategory === 'All' ? 'Recommended' : activeCategory}</h2><p className="mt-1 text-sm text-[#888]">Fresh videos from UVideo creators</p></div>
-          <Link to="/shorts" className="text-sm font-bold text-[#3ea6ff] hover:text-[#77c3ff]">Open Shorts →</Link>
+          <Link to="/shorts" className="text-sm font-bold text-[#3ea6ff] hover:text-[#77c3ff]">Open Slims →</Link>
         </div>
         {loading ? (
           <div className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <div key={index} className="animate-pulse"><div className="aspect-video rounded-xl bg-[#202020]"/><div className="mt-3 h-4 w-4/5 rounded bg-[#202020]"/><div className="mt-2 h-3 w-1/2 rounded bg-[#181818]"/></div>)}</div>

@@ -19,9 +19,8 @@ const Icon = ({ name }) => {
 
 const navigation = [
   { to: '/', label: 'Home', icon: 'home' },
-  { href: 'https://mathart.unrealcake8.site', label: 'MathArt', icon: 'math' },
   { to: '/?category=Tutorials', label: 'Tutorials', icon: 'tutorials' },
-  { to: '/shorts', label: 'Shorts', icon: 'shorts' },
+  { to: '/shorts', label: 'Slims', icon: 'shorts' },
   { to: '/shorts?tab=following', label: 'Subscriptions', icon: 'subscriptions' },
   { to: '/upload', label: 'Upload', icon: 'upload' },
   { to: '/profile', label: 'Profile', icon: 'profile' },
