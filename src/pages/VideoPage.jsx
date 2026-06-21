@@ -11,10 +11,16 @@ function embedUrl(url = '') {
   return url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
 }
 
+const protectedVideoProps = {
+  controlsList: 'nodownload',
+  disablePictureInPicture: true,
+  onContextMenu: (event) => event.preventDefault(),
+}
+
 function Player({ item }) {
   const isYoutube = item.media_url?.includes('youtube.com') || item.media_url?.includes('youtu.be')
   if (isYoutube) return <iframe title={item.title} src={`${embedUrl(item.media_url)}?controls=1`} className="h-full w-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-  if (item.media_url) return <video src={item.media_url} className="h-full w-full bg-black object-contain" controls playsInline />
+  if (item.media_url) return <video src={item.media_url} className="h-full w-full bg-black object-contain" controls playsInline {...protectedVideoProps} />
   return <div className="grid h-full place-items-center bg-gradient-to-br from-[#102838] via-[#102a43] to-[#07191f] p-8 text-center"><div><span className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#3ea6ff] text-2xl font-black text-[#06131c]">U</span><p className="mt-4 text-lg font-bold">{item.title}</p><p className="mt-2 text-sm text-[#aaa]">This creator preview is coming soon.</p></div></div>
 }
 

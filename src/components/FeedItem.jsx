@@ -113,6 +113,9 @@ function FeedPlayer({ item, isActive, isPaused, settings }) {
           muted={isMuted}
           crossOrigin="anonymous"
           onTimeUpdate={handleTimeUpdate}
+          controlsList="nodownload"
+          disablePictureInPicture
+          onContextMenu={(event) => event.preventDefault()}
         />
 
         {/* Custom Caption Overlay */}
