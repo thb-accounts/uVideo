@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { fetchContent } from '../lib/contentApi'
+import { relativeDate } from '../lib/relativeDate'
 
 const categories = ['All', 'Tutorials', 'Coding', 'Shorts', 'General']
 const gradients = [
@@ -16,13 +17,6 @@ function youtubeThumbnail(url = '') {
   return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : ''
 }
 
-function relativeDate(value) {
-  if (!value) return 'Recently uploaded'
-  const days = Math.max(1, Math.floor((Date.now() - new Date(value).getTime()) / 86400000))
-  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`
-  if (days < 30) return `${Math.floor(days / 7)} week${days < 14 ? '' : 's'} ago`
-  return `${Math.floor(days / 30)} month${days < 60 ? '' : 's'} ago`
-}
 
 function VideoThumbnail({ item, index }) {
   const thumbnail = item.thumbnail_url || youtubeThumbnail(item.media_url)
@@ -57,7 +51,7 @@ function VideoCard({ item, index }) {
         <div className="min-w-0">
           <h3 className="line-clamp-2 text-sm font-bold leading-5 text-white group-hover:text-[#d9f3ff]">{item.title}</h3>
           <p className="mt-1 truncate text-xs text-[#aaa]">{item.username ? `@${item.username}` : 'UVideo creators'}</p>
-          <p className="text-xs text-[#aaa]">{item.views || item.view_count || 0} views · {relativeDate(item.created_at)}</p>
+          <p className="text-xs text-[#aaa]">{relativeDate(item.created_at)}</p>
           {item.category && <span className="mt-2 inline-block rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#bfe9ff]">{item.category}</span>}
         </div>
       </div>
@@ -146,18 +140,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-
-      <section className="relative mt-6 overflow-hidden rounded-2xl border border-[#3ea6ff]/20 bg-gradient-to-r from-[#111d2a] via-[#102838] to-[#07191f] p-6 sm:p-8">
-          <div className="absolute -right-20 -top-28 h-72 w-72 rounded-full bg-[#00c8ff]/15 blur-3xl" />
-          <div className="relative max-w-2xl">
-            <p className="text-xs font-black uppercase tracking-[0.24em] text-[#61d8ff]">Create · Learn · Share</p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Videos for creators, coders, and community makers.</h1>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-[#b9c5cc] sm:text-base">Discover visual math, practical tutorials, creative coding, and original videos on UVideo.</p>
-            <div className="mt-5 flex flex-wrap gap-3">
-              <a href="https://unrealcake8.site" className="rounded-full bg-[#3ea6ff] px-5 py-2.5 text-sm font-black text-[#06131c] transition hover:bg-[#70bdff]">Explore the UC8 Foundation ↗</a>
-           </div>
-          </div>
-        </section>
 
       <section className="mt-8">
         <div className="mb-5 flex items-end justify-between gap-4">
