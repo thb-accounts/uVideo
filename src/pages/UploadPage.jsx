@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createContent, getProfile } from '../lib/contentApi'
+import { uploadVideoToBackblaze } from '../lib/backblazeUpload'
 import { uploadVideoToCloudinary } from '../lib/cloudinaryUpload'
 import { useAuth } from '../context/useAuth'
 
@@ -31,6 +32,7 @@ export default function UploadPage() {
     const formData = new FormData(form)
     let mediaUrl = String(formData.get('media_url') || '').trim()
     const videoFile = formData.get('video_file')
+    const uploadProvider = String(formData.get('upload_provider') || 'backblaze').trim()
     const captionUrl = String(formData.get('caption_url') || '').trim()
     let thumbnailUrl = String(formData.get('thumbnail_url') || '').trim()
     const title = String(formData.get('title') || '').trim()
@@ -55,7 +57,7 @@ export default function UploadPage() {
     }
 
     setSubmitting(true)
-    setStatus(videoFile && videoFile.size > 0 ? 'Uploading your video to Cloudinary...' : 'Publishing your video...')
+    setStatus(videoFile && videoFile.size > 0 ? `Uploading your video to ${uploadProvider === 'cloudinary' ? 'Cloudinary fallback' : 'Backblaze B2'}...` : 'Publishing your video...')
 
     try {
       if (!username) {
@@ -63,8 +65,10 @@ export default function UploadPage() {
       }
 
       if (videoFile && videoFile.size > 0) {
-        mediaUrl = await uploadVideoToCloudinary(videoFile)
-        setStatus('Publishing your Cloudinary video...')
+        mediaUrl = uploadProvider === 'cloudinary'
+          ? await uploadVideoToCloudinary(videoFile)
+          : await uploadVideoToBackblaze(videoFile)
+        setStatus(`Publishing your ${uploadProvider === 'cloudinary' ? 'Cloudinary fallback' : 'Backblaze B2'} video...`)
       }
 
       await createContent({
@@ -126,6 +130,14 @@ export default function UploadPage() {
           <input className="theme-input rounded-xl border px-3 py-2" name="points" type="number" min="5" defaultValue="20" />
         </div>
         <label className="grid gap-1 text-sm font-semibold">
+          Upload destination
+          <select className="theme-input rounded-xl border px-3 py-2" name="upload_provider" defaultValue="backblaze">
+            <option value="backblaze">Backblaze B2 primary upload</option>
+            <option value="cloudinary">Cloudinary fallback upload</option>
+          </select>
+          <span className="text-xs font-normal theme-muted">Backblaze B2 is the primary upload route. Cloudinary is available separately as a fallback route.</span>
+        </label>
+        <label className="grid gap-1 text-sm font-semibold">
           Video file
           <input
             accept="video/*"
@@ -133,7 +145,7 @@ export default function UploadPage() {
             name="video_file"
             type="file"
           />
-          <span className="text-xs font-normal theme-muted">Uploaded videos are stored and delivered through Cloudinary, a worldwide trusted provider.</span>
+          <span className="text-xs font-normal theme-muted">Choose Backblaze B2 for primary uploads, or switch the destination above to use Cloudinary fallback uploads.</span>
         </label>
         <label className="grid gap-1 text-sm font-semibold">
           Thumbnail URL
@@ -145,7 +157,7 @@ export default function UploadPage() {
           />
         </label>
         <label className="grid gap-1 text-sm font-semibold">
-          Backup MP4 link
+          Direct MP4 fallback link
           <input
             className="theme-input rounded-xl border px-3 py-2"
             name="media_url"

@@ -6,6 +6,7 @@ import morgan from 'morgan'
 import authRoutes from './routes/auth.routes.js'
 import usersRoutes from './routes/users.routes.js'
 import videosRoutes from './routes/videos.routes.js'
+import backblazeRoutes from './routes/backblaze.routes.js'
 import cloudinaryRoutes from './routes/cloudinary.routes.js'
 
 export const app = express()
@@ -29,6 +30,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/videos', videosRoutes)
+app.use('/api/backblaze', backblazeRoutes)
 app.use('/api/cloudinary', cloudinaryRoutes)
 
 app.use((error, _req, res, _next) => {
