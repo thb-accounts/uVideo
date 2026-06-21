@@ -53,3 +53,28 @@ a { color: inherit; text-decoration: none; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: #0f0f0f; }
 ::-webkit-scrollbar-thumb { background: #3a3a3a; border: 2px solid #0f0f0f; border-radius: 999px; }
+
+@media (max-width: 767px) {
+  html {
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+  }
+
+  body {
+    overscroll-behavior-y: none;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .mobile-watch-shell main {
+    padding-bottom: 0;
+  }
+
+  .mobile-watch-shell nav {
+    background: linear-gradient(180deg, rgba(15, 15, 15, 0.78), #0f0f0f 45%);
+  }
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import BrandLogo from './BrandLogo'
 import { useAuth } from '../context/useAuth'
@@ -34,6 +34,10 @@ export default function AppShell() {
   const navigate = useNavigate()
   const params = new URLSearchParams(location.search)
   const [searchText, setSearchText] = useState(params.get('q') || '')
+  const isShortsExperience = location.pathname.startsWith('/shorts') || location.pathname.startsWith('/video')
+  const mobileNavigation = useMemo(() => (
+    navigation.filter((item) => ['Home', 'Shorts', 'Upload', 'Profile', 'Settings'].includes(item.label))
+  ), [])
 
   useEffect(() => {
     setSearchText(new URLSearchParams(location.search).get('q') || '')
@@ -51,9 +55,9 @@ export default function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--app-bg)] text-white">
-      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b border-white/10 bg-[#0f0f0f]/95 px-4 backdrop-blur-xl sm:gap-6 lg:px-6">
-        <BrandLogo />
+    <div className={`min-h-screen bg-[var(--app-bg)] text-white ${isShortsExperience ? 'mobile-watch-shell' : ''}`}>
+      <header className="fixed inset-x-0 top-0 z-50 flex h-14 items-center gap-2 border-b border-white/10 bg-[#0f0f0f]/95 px-3 backdrop-blur-xl supports-[padding:max(0px)]:pt-[env(safe-area-inset-top)] sm:h-16 sm:gap-6 sm:px-4 lg:px-6">
+        <BrandLogo compact />
         <form onSubmit={handleSearch} className="mx-auto flex w-full max-w-2xl items-center">
           <label htmlFor="uvideo-search" className="sr-only">Search UVideo</label>
           <input
@@ -62,9 +66,9 @@ export default function AppShell() {
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
             placeholder="Search UVideo"
-            className="h-10 min-w-0 flex-1 rounded-l-full border border-white/15 bg-[#121212] px-4 text-sm text-white outline-none transition placeholder:text-[#888] focus:border-[#3ea6ff]"
+            className="h-10 min-w-0 flex-1 rounded-l-full border border-white/15 bg-[#121212] px-3 text-sm text-white outline-none transition placeholder:text-[#888] focus:border-[#3ea6ff] sm:px-4"
           />
-          <button className="grid h-10 w-12 place-items-center rounded-r-full border border-l-0 border-white/15 bg-[#222] text-[#ddd] transition hover:bg-[#303030]" aria-label="Search">
+          <button className="grid h-10 w-11 shrink-0 place-items-center rounded-r-full border border-l-0 border-white/15 bg-[#222] text-[#ddd] transition hover:bg-[#303030] sm:w-12" aria-label="Search">
             <svg viewBox="0 0 24 24" className="h-5 w-5 fill-none stroke-current" strokeWidth="2"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
           </button>
         </form>
@@ -102,13 +106,13 @@ export default function AppShell() {
         </div>
       </aside>
 
-      <main className="min-h-screen pb-20 pt-16 lg:ml-60 lg:pb-0">
+      <main className="min-h-screen pb-[calc(4.75rem+env(safe-area-inset-bottom))] pt-14 sm:pt-16 lg:ml-60 lg:pb-0">
         <Outlet />
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-white/10 bg-[#0f0f0f]/98 lg:hidden" aria-label="Mobile navigation">
-        {navigation.filter((item) => ['Home', 'Shorts', 'Upload', 'Profile', 'Settings'].includes(item.label)).map((item) => (
-          <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({ isActive }) => `flex flex-col items-center justify-center gap-1 text-[10px] ${isActive ? 'text-[#3ea6ff]' : 'text-[#aaa]'}`}>
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid min-h-16 grid-cols-5 border-t border-white/10 bg-[#0f0f0f]/98 pb-[env(safe-area-inset-bottom)] shadow-[0_-10px_30px_rgba(0,0,0,0.35)] backdrop-blur-xl lg:hidden" aria-label="Mobile navigation">
+        {mobileNavigation.map((item) => (
+          <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({ isActive }) => `flex min-h-16 flex-col items-center justify-center gap-1 text-[10px] font-semibold transition ${isActive ? 'text-[#3ea6ff]' : 'text-[#aaa]'}`}>
             <Icon name={item.icon} /><span>{item.label}</span>
           </NavLink>
         ))}
