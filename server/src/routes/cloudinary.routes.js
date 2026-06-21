@@ -7,10 +7,6 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 },
 })
-const thumbnailUpload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
-})
 
 function cleanEnvValue(value) {
   return typeof value === 'string' ? value.trim() : ''
@@ -108,36 +104,6 @@ router.post('/upload', upload.single('video'), async (req, res) => {
 
   return res.status(201).json({
     mediaUrl: responseBody.secure_url,
-    publicId: responseBody.public_id,
-  })
-})
-
-router.post('/upload-thumbnail', thumbnailUpload.single('thumbnail'), async (req, res) => {
-  const config = getCloudinaryConfig()
-  if (!config) {
-    return res.status(503).json({
-      message: 'Cloudinary uploads are not configured yet. Add Cloudinary env vars in Vercel Project Settings, redeploy, or paste a thumbnail URL instead.',
-    })
-  }
-
-  if (!req.file) {
-    return res.status(400).json({ message: 'Choose a thumbnail image to upload.' })
-  }
-
-  if (!req.file.mimetype.startsWith('image/')) {
-    return res.status(400).json({ message: 'Only image files can be uploaded as thumbnails.' })
-  }
-
-  const { cloudinaryResponse, responseBody } = await uploadToCloudinary({ file: req.file, resourceType: 'image', config })
-
-  if (!cloudinaryResponse.ok) {
-    return res.status(502).json({
-      message: responseBody?.error?.message || 'Cloudinary could not store this thumbnail. Paste a thumbnail URL instead.',
-    })
-  }
-
-  return res.status(201).json({
-    thumbnailUrl: responseBody.secure_url,
     publicId: responseBody.public_id,
   })
 })

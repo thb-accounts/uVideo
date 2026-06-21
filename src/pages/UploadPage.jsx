@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createContent, getProfile } from '../lib/contentApi'
-import { uploadThumbnailToCloudinary, uploadVideoToCloudinary } from '../lib/cloudinaryUpload'
+import { uploadVideoToCloudinary } from '../lib/cloudinaryUpload'
 import { useAuth } from '../context/useAuth'
 
 export default function UploadPage() {
@@ -33,7 +33,6 @@ export default function UploadPage() {
     const videoFile = formData.get('video_file')
     const captionUrl = String(formData.get('caption_url') || '').trim()
     let thumbnailUrl = String(formData.get('thumbnail_url') || '').trim()
-    const thumbnailFile = formData.get('thumbnail_file')
     const title = String(formData.get('title') || '').trim()
     const description = String(formData.get('description') || '').trim()
     const category = String(formData.get('category') || 'General').trim()
@@ -55,11 +54,6 @@ export default function UploadPage() {
       return
     }
 
-    if (thumbnailFile && thumbnailFile.size > 0 && !thumbnailFile.type.startsWith('image/')) {
-      setStatus('Thumbnail uploads must be image files.')
-      return
-    }
-
     setSubmitting(true)
     setStatus(videoFile && videoFile.size > 0 ? 'Uploading your video to Cloudinary...' : 'Publishing your video...')
 
@@ -70,12 +64,7 @@ export default function UploadPage() {
 
       if (videoFile && videoFile.size > 0) {
         mediaUrl = await uploadVideoToCloudinary(videoFile)
-        setStatus(thumbnailFile && thumbnailFile.size > 0 ? 'Uploading your thumbnail to Cloudinary...' : 'Publishing your Cloudinary video...')
-      }
-
-      if (thumbnailFile && thumbnailFile.size > 0) {
-        thumbnailUrl = await uploadThumbnailToCloudinary(thumbnailFile)
-        setStatus('Publishing your video with thumbnail...')
+        setStatus('Publishing your Cloudinary video...')
       }
 
       await createContent({
@@ -145,16 +134,6 @@ export default function UploadPage() {
             type="file"
           />
           <span className="text-xs font-normal theme-muted">Uploaded videos are stored and delivered through Cloudinary, a worldwide trusted provider.</span>
-        </label>
-        <label className="grid gap-1 text-sm font-semibold">
-          Thumbnail image
-          <input
-            accept="image/*"
-            className="theme-input rounded-xl border px-3 py-2"
-            name="thumbnail_file"
-            type="file"
-          />
-          <span className="text-xs font-normal theme-muted">Recommended page cards use this image before falling back to a video preview.</span>
         </label>
         <label className="grid gap-1 text-sm font-semibold">
           Thumbnail URL
