@@ -12,12 +12,49 @@ import { readUiSettings } from '../lib/uiSettings'
 import { parseVTT, formatBionic } from '../lib/captionUtils'
 
 // ─── Video / Embed Player ─────────────────────────────────────────────────────
+
+function getYouTubeEmbedDetails(rawUrl = '') {
+  if (!rawUrl) return null
+  try {
+    const parsed = new URL(rawUrl)
+    const host = parsed.hostname.replace(/^www\./, '')
+    const pathParts = parsed.pathname.split('/').filter(Boolean)
+    let videoId = ''
+
+    if (host === 'youtu.be') {
+      videoId = pathParts[0] || ''
+    } else if (host.endsWith('youtube.com')) {
+      if (pathParts[0] === 'embed') videoId = pathParts[1] || ''
+      else if (pathParts[0] === 'shorts') videoId = pathParts[1] || ''
+      else if (pathParts[0] === 'live') videoId = pathParts[1] || ''
+      else videoId = parsed.searchParams.get('v') || ''
+    }
+
+    if (!videoId) return null
+    return {
+      embedUrl: `https://www.youtube.com/embed/${encodeURIComponent(videoId)}`,
+      videoId,
+    }
+  } catch {
+    const match = rawUrl.match(/(?:youtube\.com\/(?:embed\/|shorts\/|live\/|watch\?v=)|youtu\.be\/)([A-Za-z0-9_-]{6,})/)
+    if (!match?.[1]) return null
+    return {
+      embedUrl: `https://www.youtube.com/embed/${encodeURIComponent(match[1])}`,
+      videoId: match[1],
+    }
+  }
+}
+
+function getMediaUrl(item = {}) {
+  return item.media_url || item.mediaUrl || item.video_url || item.videoUrl || item.url || ''
+}
+
 function FeedPlayer({ item, isActive, isPaused, settings }) {
   const videoRef = useRef(null)
   const [cues, setCues] = useState([])
   const [currentCaption, setCurrentCaption] = useState('')
   const [isMuted, setIsMuted] = useState(settings.mutedByDefault)
-  const mediaUrl = item?.media_url
+  const mediaUrl = getMediaUrl(item)
   const captionUrl = item?.captionUrl || item?.caption_url
 
   useEffect(() => {
@@ -27,7 +64,12 @@ function FeedPlayer({ item, isActive, isPaused, settings }) {
     } else {
       videoRef.current.pause()
     }
-  }, [isActive, isPaused])
+  }, [isActive, isPaused, mediaUrl])
+
+  function handleLoadedMetadata() {
+    if (!videoRef.current || !isActive || isPaused) return
+    videoRef.current.play().catch(() => {})
+  }
 
   useEffect(() => {
     if (captionUrl) {
@@ -57,8 +99,7 @@ function FeedPlayer({ item, isActive, isPaused, settings }) {
 
   if (!item) return null
 
-  const isYoutube =
-    mediaUrl?.includes('youtube.com') || mediaUrl?.includes('youtu.be')
+  const youtubeDetails = getYouTubeEmbedDetails(mediaUrl)
 
   if (item.type === 'mini') {
     return (
@@ -72,12 +113,10 @@ function FeedPlayer({ item, isActive, isPaused, settings }) {
     )
   }
 
-  if (isYoutube) {
-    const embedUrl = mediaUrl
-      .replace('watch?v=', 'embed/')
-      .replace('youtu.be/', 'youtube.com/embed/')
+  if (youtubeDetails) {
+    const { embedUrl, videoId } = youtubeDetails
     const src = isActive && !isPaused
-      ? `${embedUrl}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playlist=${embedUrl.split('/').pop()}`
+      ? `${embedUrl}?autoplay=1&mute=${isMuted ? 1 : 0}&controls=0&loop=1&playsinline=1&playlist=${videoId}`
       : embedUrl
     return (
       <div className="relative h-full w-full">
@@ -86,7 +125,7 @@ function FeedPlayer({ item, isActive, isPaused, settings }) {
           title={item.title}
           src={src}
           className="h-full w-full pointer-events-none"
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
           allowFullScreen
         />
         {isMuted && (
@@ -105,13 +144,16 @@ function FeedPlayer({ item, isActive, isPaused, settings }) {
     return (
       <div className="relative h-full w-full">
         <video
+          key={mediaUrl}
           ref={videoRef}
           src={mediaUrl}
           className="h-full w-full object-cover"
           loop
           playsInline
           muted={isMuted}
-          crossOrigin="anonymous"
+          autoPlay={isActive && !isPaused}
+          preload="metadata"
+          onLoadedMetadata={handleLoadedMetadata}
           onTimeUpdate={handleTimeUpdate}
           controlsList="nodownload"
           disablePictureInPicture
