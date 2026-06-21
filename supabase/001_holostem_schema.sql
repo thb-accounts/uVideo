@@ -46,6 +46,7 @@ create table if not exists public.contents (
   type text not null default 'video' check (type in ('video', 'lesson', 'mini', 'short', 'slim')),
   category text,
   media_url text,
+  thumbnail_url text,
   caption_url text,
   difficulty text,
   points int not null default 10,
@@ -75,6 +76,7 @@ alter table public.contents drop constraint if exists contents_type_check;
 alter table public.contents add constraint contents_type_check check (type in ('video', 'lesson', 'mini', 'short', 'slim'));
 alter table public.contents add column if not exists category text;
 alter table public.contents add column if not exists media_url text;
+alter table public.contents add column if not exists thumbnail_url text;
 alter table public.contents add column if not exists caption_url text;
 alter table public.contents add column if not exists difficulty text;
 alter table public.contents add column if not exists points int not null default 10;
