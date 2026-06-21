@@ -356,7 +356,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100dvh-4rem)] w-full items-center justify-center bg-black">
+      <div className="flex h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] w-full items-center justify-center bg-black">
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 rounded-full border-4 brand-spinner animate-spin" />
           <p className="text-[rgba(227,232,191,0.62)] text-sm">Loading feed…</p>
@@ -425,7 +425,7 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="-mx-4 -mt-20 min-h-[calc(100dvh-4rem)] brand-surface-mobile pb-28 pt-20 lg:hidden">
+        <section className="-mx-4 -mt-20 min-h-[calc(100dvh-3.5rem)] sm:min-h-[calc(100dvh-4rem)] brand-surface-mobile pb-28 pt-20 lg:hidden">
           {loadError && <p className="mx-4 mb-4 rounded-xl brand-error p-3 text-sm">{loadError}</p>}
           <div className="flex gap-4 overflow-x-auto px-4 pb-5 pt-3" style={{ scrollbarWidth: 'none' }}>
             {storyProfiles.length === 0 ? (
@@ -496,7 +496,7 @@ export default function DashboardPage() {
 
   if (feed.length === 0) {
     return (
-      <div className="flex h-[calc(100dvh-4rem)] w-full flex-col items-center justify-center bg-[var(--brand-black)] text-[var(--brand-cream)] gap-4">
+      <div className="flex h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] w-full flex-col items-center justify-center bg-[var(--brand-black)] text-[var(--brand-cream)] gap-4">
         <div className="text-4xl">📭</div>
         <SearchProfileResults profiles={profileResults} searchQuery={searchQuery} />
         {loadError && <p className="max-w-xs rounded-xl brand-error p-3 text-center text-sm">{loadError}</p>}
@@ -551,7 +551,7 @@ export default function DashboardPage() {
         ref={containerRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="h-[calc(100dvh-4rem)] overflow-y-scroll snap-y snap-mandatory bg-[var(--brand-black)]"
+        className="h-[calc(100dvh-3.5rem)] sm:h-[calc(100dvh-4rem)] overflow-y-scroll snap-y snap-mandatory bg-[var(--brand-black)]"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`div::-webkit-scrollbar{display:none}`}</style>
@@ -559,7 +559,7 @@ export default function DashboardPage() {
           <div
             key={item.id}
             data-feed-index={index}
-            className="h-[calc(100dvh-4rem)] w-full snap-start snap-always"
+            className="h-[calc(100dvh-3.5rem)] w-full snap-start snap-always sm:h-[calc(100dvh-4rem)]"
           >
             <FeedItem
               item={item}
