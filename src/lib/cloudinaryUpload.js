@@ -12,3 +12,16 @@ export async function uploadVideoToCloudinary(file) {
 
   return mediaUrl
 }
+
+export async function uploadThumbnailToCloudinary(file) {
+  const formData = new FormData()
+  formData.append('thumbnail', file)
+
+  const { thumbnailUrl } = await apiRequest('/cloudinary/upload-thumbnail', {
+    method: 'POST',
+    body: formData,
+    isFormData: true,
+  })
+
+  return thumbnailUrl
+}

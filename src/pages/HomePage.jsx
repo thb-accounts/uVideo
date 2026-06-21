@@ -70,12 +70,15 @@ export default function HomePage() {
   const navigate = useNavigate()
   const params = new URLSearchParams(location.search)
   const requestedCategory = params.get('category') || 'All'
+  const requestedSearch = params.get('search') || ''
   const [activeCategory, setActiveCategory] = useState(requestedCategory)
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [searchTerm, setSearchTerm] = useState(requestedSearch)
 
   useEffect(() => setActiveCategory(requestedCategory), [requestedCategory])
+  useEffect(() => setSearchTerm(requestedSearch), [requestedSearch])
 
   useEffect(() => {
     let cancelled = false
@@ -92,22 +95,49 @@ export default function HomePage() {
   }, [])
 
   const filteredVideos = useMemo(() => {
-    if (activeCategory === 'All') return videos
-    const needle = activeCategory.toLowerCase().replace(/s$/, '')
-    return videos.filter((item) => `${item.category || ''} ${item.type || ''} ${item.title || ''}`.toLowerCase().includes(needle))
-  }, [activeCategory, videos])
+    const categoryNeedle = activeCategory.toLowerCase().replace(/s$/, '')
+    const queryNeedle = searchTerm.trim().toLowerCase()
+    return videos.filter((item) => {
+      const searchable = `${item.title || ''} ${item.description || ''} ${item.username || ''} ${item.category || ''} ${item.type || ''}`.toLowerCase()
+      const matchesCategory = activeCategory === 'All' || searchable.includes(categoryNeedle)
+      const matchesSearch = !queryNeedle || searchable.includes(queryNeedle)
+      return matchesCategory && matchesSearch
+    })
+  }, [activeCategory, searchTerm, videos])
+
+  function updateUrl(nextCategory, nextSearch) {
+    const next = new URLSearchParams(location.search)
+    if (nextCategory === 'All') next.delete('category')
+    else next.set('category', nextCategory)
+    if (nextSearch.trim()) next.set('search', nextSearch.trim())
+    else next.delete('search')
+    navigate(`/${next.toString() ? `?${next}` : ''}`, { replace: true })
+  }
 
   function selectCategory(category) {
     setActiveCategory(category)
-    const next = new URLSearchParams(location.search)
-    if (category === 'All') next.delete('category')
-    else next.set('category', category)
-    navigate(`/${next.toString() ? `?${next}` : ''}`, { replace: true })
+    updateUrl(category, searchTerm)
+  }
+
+  function handleSearchSubmit(event) {
+    event.preventDefault()
+    updateUrl(activeCategory, searchTerm)
   }
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6 lg:px-8">
       <section className="sticky top-16 z-30 -mx-4 border-b border-white/5 bg-[#0f0f0f]/95 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+        <form className="mb-3 flex gap-2" onSubmit={handleSearchSubmit}>
+          <input
+            aria-label="Search videos"
+            className="theme-input min-w-0 flex-1 rounded-full border px-4 py-2 text-sm"
+            onChange={(event) => setSearchTerm(event.target.value)}
+            placeholder="Search titles, creators, descriptions..."
+            type="search"
+            value={searchTerm}
+          />
+          <button className="rounded-full bg-[#3ea6ff] px-4 py-2 text-sm font-black text-[#06131c] transition hover:bg-[#70bdff]" type="submit">Search</button>
+        </form>
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
           {categories.map((category) => (
             <button key={category} onClick={() => selectCategory(category)} className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${activeCategory === category ? 'bg-white text-[#0f0f0f]' : 'bg-[#272727] text-white hover:bg-[#3a3a3a]'}`}>
@@ -131,14 +161,14 @@ export default function HomePage() {
 
       <section className="mt-8">
         <div className="mb-5 flex items-end justify-between gap-4">
-          <div><h2 className="text-xl font-black">{activeCategory === 'All' ? 'Recommended' : activeCategory}</h2><p className="mt-1 text-sm text-[#888]">Fresh videos from UVideo creators</p></div>
+          <div><h2 className="text-xl font-black">{searchTerm.trim() ? `Search results for “${searchTerm.trim()}”` : activeCategory === 'All' ? 'Recommended' : activeCategory}</h2><p className="mt-1 text-sm text-[#888]">Fresh videos from UVideo creators</p></div>
           <Link to="/shorts" className="text-sm font-bold text-[#3ea6ff] hover:text-[#77c3ff]">Open Slims →</Link>
         </div>
         {loading ? (
           <div className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <div key={index} className="animate-pulse"><div className="aspect-video rounded-xl bg-[#202020]"/><div className="mt-3 h-4 w-4/5 rounded bg-[#202020]"/><div className="mt-2 h-3 w-1/2 rounded bg-[#181818]"/></div>)}</div>
         ) : error ? <p className="rounded-xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-200">{error}</p>
           : filteredVideos.length > 0 ? <div className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{filteredVideos.map((item, index) => <VideoCard key={item.id} item={item} index={index} />)}</div>
-            : <div className="rounded-2xl border border-dashed border-white/15 bg-[#151515] p-10 text-center"><p className="text-lg font-bold">No videos in this category yet.</p><p className="mt-2 text-sm text-[#aaa]">Be the first creator to publish one.</p><Link to="/upload" className="mt-5 inline-block rounded-full bg-[#3ea6ff] px-5 py-2 text-sm font-black text-[#06131c]">Upload a video</Link></div>}
+            : <div className="rounded-2xl border border-dashed border-white/15 bg-[#151515] p-10 text-center"><p className="text-lg font-bold">No videos match your search yet.</p><p className="mt-2 text-sm text-[#aaa]">Be the first creator to publish one.</p><Link to="/upload" className="mt-5 inline-block rounded-full bg-[#3ea6ff] px-5 py-2 text-sm font-black text-[#06131c]">Upload a video</Link></div>}
       </section>
 
       <footer className="mt-14 border-t border-white/10 py-8 text-xs leading-5 text-[#777]">
