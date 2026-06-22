@@ -39,9 +39,9 @@ export default function AuthPage() {
   return (
     <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
       <div className="w-full rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-glow">
-        <h1 className="mb-2 text-2xl font-bold text-neon-cyan">UVideo</h1>
+        <h1 className="mb-2 text-2xl font-bold text-neon-cyan">SimpliChill</h1>
         <p className="mb-4 text-sm text-slate-300">Modern interactive media + learning for all ages.</p>
-        <p className="mb-4 rounded-md bg-cyan-500/10 p-2 text-xs text-cyan-100">New accounts must be verified before login. Email <a className="font-semibold underline" href="mailto:hello@unrealcake8.site?subject=UVideo%20account%20verification%20request">hello@unrealcake8.site</a> to request your verification link; otherwise you will stay logged out.</p>
+        <p className="mb-4 rounded-md bg-cyan-500/10 p-2 text-xs text-cyan-100">New accounts must be verified before login. Email <a className="font-semibold underline" href="mailto:hello@unrealcake8.site?subject=SimpliChill%20account%20verification%20request">hello@unrealcake8.site</a> to request your verification link; otherwise you will stay logged out.</p>
 
         {!hasSupabaseConfig && (
           <p className="mb-3 rounded-md bg-yellow-500/15 p-2 text-xs text-yellow-200">

@@ -20,7 +20,7 @@ function getCloudinaryConfig() {
   const cloudName = cleanEnvValue(process.env.CLOUDINARY_CLOUD_NAME)
   const apiKey = cleanEnvValue(process.env.CLOUDINARY_API_KEY)
   const apiSecret = cleanEnvValue(process.env.CLOUDINARY_API_SECRET)
-  const folder = cleanEnvValue(process.env.CLOUDINARY_UPLOAD_FOLDER) || 'uvideo'
+  const folder = cleanEnvValue(process.env.CLOUDINARY_UPLOAD_FOLDER) || 'simplichill'
 
   const requiredValues = [cloudName, apiKey, apiSecret]
   if (requiredValues.some((value) => !value || isPlaceholderValue(value))) {

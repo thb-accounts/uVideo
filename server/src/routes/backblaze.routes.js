@@ -21,7 +21,7 @@ function getBackblazeConfig() {
   const applicationKey = cleanEnvValue(process.env.BACKBLAZE_B2_APPLICATION_KEY)
   const bucketId = cleanEnvValue(process.env.BACKBLAZE_B2_BUCKET_ID)
   const bucketName = cleanEnvValue(process.env.BACKBLAZE_B2_BUCKET_NAME)
-  const folder = cleanEnvValue(process.env.BACKBLAZE_B2_UPLOAD_FOLDER) || 'uvideo'
+  const folder = cleanEnvValue(process.env.BACKBLAZE_B2_UPLOAD_FOLDER) || 'simplichill'
 
   const requiredValues = [keyId, applicationKey, bucketId, bucketName]
   if (requiredValues.some((value) => !value || isPlaceholderValue(value))) {
@@ -31,7 +31,7 @@ function getBackblazeConfig() {
   return { keyId, applicationKey, bucketId, bucketName, folder }
 }
 
-function safeFileName(originalName = 'upload.mp4', folder = 'uvideo') {
+function safeFileName(originalName = 'upload.mp4', folder = 'simplichill') {
   const extensionMatch = originalName.match(/\.[a-z0-9]+$/i)
   const extension = extensionMatch ? extensionMatch[0].toLowerCase() : '.mp4'
   const baseName = originalName
