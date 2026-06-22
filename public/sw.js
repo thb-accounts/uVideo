@@ -1,4 +1,4 @@
-const CACHE_NAME = 'uvideo-cache-v1'
+const CACHE_NAME = 'simplichill-cache-v1'
 const urlsToCache = ['/', '/index.html', '/manifest.webmanifest']
 
 self.addEventListener('install', (event) => {

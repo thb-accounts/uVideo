@@ -1,10 +1,10 @@
-# UVideo
+# SimpliChill
 
-UVideo is a lightweight video platform for creators, coders, and community makers hosted at **https://uvideo.unrealcake8.site**.
+SimpliChill is a lightweight video platform for creators, coders, and community makers hosted at **https://simplichill.unrealcake8.site**.
 
-> **Archive note:** UVideo evolved from the original HoloStem prototype.
+> **Archive note:** SimpliChill evolved from the original HoloStem prototype.
 
-## What UVideo includes
+## What SimpliChill includes
 
 - A responsive, dark video homepage with category filters and search.
 - A separate vertical Shorts feed at `/shorts`.
@@ -13,13 +13,13 @@ UVideo is a lightweight video platform for creators, coders, and community maker
 - Cloudinary file uploads with direct MP4 fallback.
 - Supabase-backed videos, profiles, social data, and moderation.
 
-UVideo should remain deployed on its own domain.
+SimpliChill should remain deployed on its own domain.
 
 ## Routes
 
 | Route | Purpose |
 | --- | --- |
-| `/` | UVideo homepage and search results |
+| `/` | SimpliChill homepage and search results |
 | `/shorts` | Optional vertical Shorts feed |
 | `/video/:id` | Video watch page |
 | `/upload` | Authenticated creator upload flow |
@@ -46,7 +46,7 @@ The legacy `/dashboard` URL redirects to the new homepage.
    npm run dev:full
    ```
 
-Without Supabase environment variables, the frontend uses a small UVideo demo catalog so the interface can still be previewed.
+Without Supabase environment variables, the frontend uses a small SimpliChill demo catalog so the interface can still be previewed.
 
 ## Data and uploads
 
@@ -61,8 +61,8 @@ The repository includes `vercel.json` and can be deployed directly to Vercel:
 1. Import the GitHub repository into Vercel.
 2. Configure the Supabase, auth redirect, and Cloudinary environment variables from `.env.example`.
 3. Build with `npm run build` and use Vite's default `dist` output.
-4. Add **uvideo.unrealcake8.site** as the production custom domain.
+4. Add **simplichill.unrealcake8.site** as the production custom domain.
 5. Point the domain's DNS record to Vercel and redeploy after environment variables are saved.
-6. Set the production auth redirect URL to `https://uvideo.unrealcake8.site` in Supabase.
+6. Set the production auth redirect URL to `https://simplichill.unrealcake8.site` in Supabase.
 
-Deploy this project only on its configured UVideo host.
+Deploy this project only on its configured SimpliChill host.

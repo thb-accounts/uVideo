@@ -140,7 +140,7 @@ export default function PublicProfilePage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-[var(--brand-olive)]">@{username}</h1>
-              <p className="theme-muted">{profile?.display_name || 'UVideo creator'}</p>
+              <p className="theme-muted">{profile?.display_name || 'SimpliChill creator'}</p>
               <p className="text-sm theme-muted">{profile?.bio || 'No bio yet.'}</p>
             </div>
           </div>

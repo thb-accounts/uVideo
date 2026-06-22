@@ -1,6 +1,6 @@
 {
-  "name": "UVideo",
-  "short_name": "UVideo",
+  "name": "SimpliChill",
+  "short_name": "SimpliChill",
   "id": "/",
   "scope": "/",
   "lang": "en",
@@ -10,6 +10,16 @@
   "background_color": "#0f0f0f",
   "theme_color": "#0f0f0f",
   "description": "Videos for creators, coders, and community makers.",
-  "categories": ["education", "entertainment", "video"],
-  "icons": [{ "src": "/favicon.svg", "type": "image/svg+xml", "sizes": "any" }]
+  "categories": [
+    "education",
+    "entertainment",
+    "video"
+  ],
+  "icons": [
+    {
+      "src": "https://unrealcake8.site/cdn-hls/simplychill/logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ]
 }

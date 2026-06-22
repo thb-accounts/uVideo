@@ -169,7 +169,7 @@ export default function DashboardPage() {
       const browseData = await fetchContent({ category: 'all', feed: 'shorts' })
 
       if (tab === 'explore') {
-        const exploreOnly = browseData.filter((item) => item.username === 'uvideoexplore')
+        const exploreOnly = browseData.filter((item) => item.username === 'simplichillexplore')
         const avatarMap = await fetchProfileAvatarsByUserIds(exploreOnly.map((item) => item.user_id))
         if (!cancelled) setFeed(exploreOnly.map((item) => ({ ...item, avatar_url: avatarMap[item.user_id] || '' })))
         return
@@ -334,7 +334,7 @@ export default function DashboardPage() {
         <div className="text-4xl">📭</div>
         {loadError && <p className="max-w-xs rounded-xl brand-error p-3 text-center text-sm">{loadError}</p>}
         <p className="max-w-xs text-center text-xl font-semibold">
-          {tab === 'explore' ? 'No explore posts yet from @uvideoexplore' : 'No content yet'}
+          {tab === 'explore' ? 'No explore posts yet from @simplichillexplore' : 'No content yet'}
         </p>
         {tab === 'explore' ? (
           <Link to="/shorts" className="rounded-full brand-button px-6 py-2 font-semibold">

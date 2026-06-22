@@ -26,7 +26,7 @@ function Player({ item }) {
 }
 
 function Recommendation({ item }) {
-  return <Link to={`/video/${item.id}`} className="group grid grid-cols-[150px_1fr] gap-3"><div className="aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-[#16324a] to-[#087ea4]"><div className="grid h-full place-items-center text-xl font-black text-white/80">U</div></div><div className="min-w-0"><h3 className="line-clamp-2 text-sm font-bold leading-5 group-hover:text-[#8ed0ff]">{item.title}</h3><p className="mt-1 truncate text-xs text-[#aaa]">@{item.username || 'uvideo'}</p><p className="text-xs text-[#777]">{relativeDate(item.created_at)}</p></div></Link>
+  return <Link to={`/video/${item.id}`} className="group grid grid-cols-[150px_1fr] gap-3"><div className="aspect-video overflow-hidden rounded-lg bg-gradient-to-br from-[#16324a] to-[#087ea4]"><div className="grid h-full place-items-center text-xl font-black text-white/80">S</div></div><div className="min-w-0"><h3 className="line-clamp-2 text-sm font-bold leading-5 group-hover:text-[#8ed0ff]">{item.title}</h3><p className="mt-1 truncate text-xs text-[#aaa]">@{item.username || 'simplichill'}</p><p className="text-xs text-[#777]">{relativeDate(item.created_at)}</p></div></Link>
 }
 
 export default function VideoPage() {
@@ -100,7 +100,7 @@ export default function VideoPage() {
           <div className="flex min-w-0 items-center gap-3">
             <Link to={item.username ? `/u/${item.username}` : '#'} className="flex min-w-0 items-center gap-3">
               {avatarUrl ? <img src={avatarUrl} alt="" className="h-11 w-11 rounded-full object-cover" /> : <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-[#3ea6ff] to-[#00c8ff] font-black text-[#06131c]">{(item.username || 'U')[0].toUpperCase()}</span>}
-              <span className="min-w-0"><strong className="block truncate text-sm">{item.username || 'UVideo creator'}</strong><small className="text-[#888]">Creator channel</small></span>
+              <span className="min-w-0"><strong className="block truncate text-sm">{item.username || 'SimpliChill creator'}</strong><small className="text-[#888]">Creator channel</small></span>
             </Link>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -112,7 +112,7 @@ export default function VideoPage() {
 
         <div className="mt-5 rounded-xl bg-[#272727] p-4 text-sm">
           <p className="font-bold">{[item.category || 'Video', relativeDate(item.created_at)].filter(Boolean).join(' · ')}</p>
-          <p className="mt-2 whitespace-pre-wrap leading-6 text-[#ddd]">{item.description || 'A video from the UVideo creator community.'}</p>
+          <p className="mt-2 whitespace-pre-wrap leading-6 text-[#ddd]">{item.description || 'A video from the SimpliChill creator community.'}</p>
         </div>
 
       </div>

@@ -29,7 +29,7 @@ export const fallbackContent = [
     type: 'video', category: 'General',
     description: 'From sketch to equations: a lightweight workflow for shipping creative math projects.',
     media_url: '', difficulty: 'All levels', points: 20,
-    is_trending: false, username: 'uvideo', views: '684', created_at: '2026-04-30T12:00:00Z',
+    is_trending: false, username: 'simplichill', views: '684', created_at: '2026-04-30T12:00:00Z',
   },
   {
     id: 'fallback-video-5',
