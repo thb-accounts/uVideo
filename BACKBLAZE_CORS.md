@@ -1,52 +1,18 @@
-# Backblaze B2 CORS setup for SimpliChill
+# Backblaze B2 setup for SimpliChill
 
-SimpliChill uploads videos directly from the browser to Backblaze B2 using S3-compatible presigned PUT URLs. Configure CORS on the B2 bucket before production testing.
+SimpliChill uploads videos to Backblaze B2 through the server API (`POST /api/backblaze/upload`). The browser no longer receives a presigned Backblaze URL, so Backblaze bucket CORS is not required for the app upload flow.
 
-## Required origins
+## Required environment variables
 
-Do not use wildcard origins in production. Allow only:
+Configure these values on the server before enabling Backblaze uploads:
 
-- `https://simplichill.unrealcake8.site`
-- `http://localhost:5173`
-- `http://localhost:3000`
-
-## Required method
-
-- `PUT`
-
-## Required headers
-
-Allow the headers used by browser S3 presigned uploads:
-
-- `content-type`
-- `x-amz-content-sha256`
-- `x-amz-date`
-- `x-amz-security-token`
-- `authorization`
-
-## Example rule
-
-```json
-[
-  {
-    "corsRuleName": "simplichill-direct-video-uploads",
-    "allowedOrigins": [
-      "https://simplichill.unrealcake8.site",
-      "http://localhost:5173",
-      "http://localhost:3000"
-    ],
-    "allowedOperations": ["s3_put"],
-    "allowedHeaders": [
-      "content-type",
-      "x-amz-content-sha256",
-      "x-amz-date",
-      "x-amz-security-token",
-      "authorization"
-    ],
-    "exposeHeaders": ["etag"],
-    "maxAgeSeconds": 3600
-  }
-]
+```bash
+BACKBLAZE_B2_KEY_ID=""
+BACKBLAZE_B2_APPLICATION_KEY=""
+BACKBLAZE_B2_BUCKET_ID=""
+BACKBLAZE_B2_BUCKET_NAME=""
+BACKBLAZE_B2_UPLOAD_FOLDER="simplichill/videos"
+MAX_VIDEO_UPLOAD_BYTES="524288000"
 ```
 
-The app should show a small JSON `POST /api/backblaze/presign-upload`, then the actual video bytes in a direct `PUT` to the configured `BACKBLAZE_B2_S3_ENDPOINT`.
+The API authorizes with Backblaze, requests a native B2 upload URL server-side, uploads the file bytes, and returns the resulting download URL to the client.

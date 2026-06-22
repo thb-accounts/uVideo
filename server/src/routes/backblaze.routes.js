@@ -1,5 +1,4 @@
-import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
+import { createHash } from 'node:crypto'
 import { Router } from 'express'
 import multer from 'multer'
 import { cleanupMulterTempFile } from '../lib/multerCleanup.js'
@@ -14,68 +13,80 @@ import {
 } from '../lib/uploadValidation.js'
 
 const router = Router()
-const PRESIGN_EXPIRES_SECONDS = 10 * 60
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 },
 })
 
-function createBackblazeClient(config) {
-  return new S3Client({
-    region: config.region,
-    endpoint: config.endpoint,
-    credentials: {
-      accessKeyId: config.keyId,
-      secretAccessKey: config.applicationKey,
-    },
-  })
-}
-
 function getBackblazeConfig() {
   const keyId = cleanEnvValue(process.env.BACKBLAZE_B2_KEY_ID)
   const applicationKey = cleanEnvValue(process.env.BACKBLAZE_B2_APPLICATION_KEY)
+  const bucketId = cleanEnvValue(process.env.BACKBLAZE_B2_BUCKET_ID)
   const bucketName = cleanEnvValue(process.env.BACKBLAZE_B2_BUCKET_NAME)
-  const endpoint = cleanEnvValue(process.env.BACKBLAZE_B2_S3_ENDPOINT)
-  const region = cleanEnvValue(process.env.BACKBLAZE_B2_REGION)
   const folder = cleanFolder(process.env.BACKBLAZE_B2_UPLOAD_FOLDER)
-  const bunnyCdnBaseUrl = cleanEnvValue(process.env.BUNNY_CDN_BASE_URL).replace(/\/+$/g, '')
 
-  const requiredValues = [keyId, applicationKey, bucketName, endpoint, region, bunnyCdnBaseUrl]
+  const requiredValues = [keyId, applicationKey, bucketId, bucketName]
   if (requiredValues.some((value) => !value || isPlaceholderValue(value))) return null
-  return { keyId, applicationKey, bucketName, endpoint, region, folder, bunnyCdnBaseUrl }
+  return { keyId, applicationKey, bucketId, bucketName, folder }
 }
 
-router.post('/presign-upload', requireUploadAuth, rateLimitUploadPermission, async (req, res, next) => {
-  try {
-    const config = getBackblazeConfig()
-    if (!config) {
-      return res.status(503).json({ message: 'Backblaze B2 uploads are not configured yet.' })
-    }
+async function parseJsonResponse(response) {
+  return response.json().catch(() => null)
+}
 
-    const validated = validateUploadRequest(req.body)
-    if (validated.error) return res.status(400).json({ message: validated.error })
+async function uploadToBackblaze({ file, config, validated }) {
+  const authorization = Buffer.from(`${config.keyId}:${config.applicationKey}`).toString('base64')
+  const authorizeResponse = await fetch('https://api.backblazeb2.com/b2api/v3/b2_authorize_account', {
+    headers: { Authorization: `Basic ${authorization}` },
+  })
+  const authorizeBody = await parseJsonResponse(authorizeResponse)
 
-    const storageKey = buildStorageKey({ folder: config.folder, sanitizedFileName: validated.sanitizedFileName })
-    const client = createBackblazeClient(config)
-    const command = new PutObjectCommand({
-      Bucket: config.bucketName,
-      Key: storageKey,
-      ContentType: validated.contentType,
-    })
-    const uploadUrl = await getSignedUrl(client, command, { expiresIn: PRESIGN_EXPIRES_SECONDS })
-    const expiresAt = new Date(Date.now() + PRESIGN_EXPIRES_SECONDS * 1000).toISOString()
-
-    return res.json({
-      provider: 'backblaze',
-      uploadUrl,
-      storageKey,
-      playbackUrl: `${config.bunnyCdnBaseUrl}/${storageKey}`,
-      expiresAt,
-    })
-  } catch (error) {
-    return next(error)
+  if (!authorizeResponse.ok) {
+    return { ok: false, status: authorizeResponse.status, responseBody: authorizeBody }
   }
-})
+
+  const storageApi = authorizeBody?.apiInfo?.storageApi
+  const apiUrl = storageApi?.apiUrl
+  const downloadUrl = storageApi?.downloadUrl
+  const accountAuthToken = authorizeBody?.authorizationToken
+
+  const uploadUrlResponse = await fetch(`${apiUrl}/b2api/v3/b2_get_upload_url`, {
+    method: 'POST',
+    headers: {
+      Authorization: accountAuthToken,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ bucketId: config.bucketId }),
+  })
+  const uploadUrlBody = await parseJsonResponse(uploadUrlResponse)
+
+  if (!uploadUrlResponse.ok) {
+    return { ok: false, status: uploadUrlResponse.status, responseBody: uploadUrlBody }
+  }
+
+  const storageKey = buildStorageKey({ folder: config.folder, sanitizedFileName: validated.sanitizedFileName })
+  const sha1 = createHash('sha1').update(file.buffer).digest('hex')
+  const fileUploadResponse = await fetch(uploadUrlBody.uploadUrl, {
+    method: 'POST',
+    headers: {
+      Authorization: uploadUrlBody.authorizationToken,
+      'Content-Type': validated.contentType,
+      'Content-Length': String(validated.fileSize),
+      'X-Bz-File-Name': encodeURIComponent(storageKey),
+      'X-Bz-Content-Sha1': sha1,
+    },
+    body: file.buffer,
+  })
+  const fileUploadBody = await parseJsonResponse(fileUploadResponse)
+
+  return {
+    ok: fileUploadResponse.ok,
+    status: fileUploadResponse.status,
+    responseBody: fileUploadBody,
+    mediaUrl: `${downloadUrl}/file/${config.bucketName}/${storageKey}`,
+    storageKey,
+  }
+}
 
 router.post('/upload', requireUploadAuth, rateLimitUploadPermission, upload.single('video'), async (req, res, next) => {
   const file = req.file
@@ -90,23 +101,23 @@ router.post('/upload', requireUploadAuth, rateLimitUploadPermission, upload.sing
     const validated = validateUploadRequest({
       fileName: file.originalname,
       contentType: file.mimetype,
-      size: file.size,
+      fileSize: file.size,
     })
     if (validated.error) return res.status(400).json({ message: validated.error })
 
-    const storageKey = buildStorageKey({ folder: config.folder, sanitizedFileName: validated.sanitizedFileName })
-    const client = createBackblazeClient(config)
-    await client.send(new PutObjectCommand({
-      Bucket: config.bucketName,
-      Key: storageKey,
-      Body: file.buffer,
-      ContentType: validated.contentType,
-    }))
+    const uploadResult = await uploadToBackblaze({ file, config, validated })
+    if (!uploadResult.ok) {
+      return res.status(502).json({
+        message: uploadResult.responseBody?.message || uploadResult.responseBody?.code || 'Backblaze B2 could not store this video.',
+      })
+    }
 
-    return res.json({
+    return res.status(201).json({
       provider: 'backblaze',
-      storageKey,
-      playbackUrl: `${config.bunnyCdnBaseUrl}/${storageKey}`,
+      mediaUrl: uploadResult.mediaUrl,
+      storageKey: uploadResult.storageKey,
+      fileId: uploadResult.responseBody?.fileId,
+      fileName: uploadResult.responseBody?.fileName,
     })
   } catch (error) {
     return next(error)

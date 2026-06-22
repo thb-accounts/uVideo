@@ -83,7 +83,7 @@ router.post('/upload', requireUploadAuth, rateLimitUploadPermission, upload.sing
     const validated = validateUploadRequest({
       fileName: file.originalname,
       contentType: file.mimetype,
-      size: file.size,
+      fileSize: file.size,
     })
     if (validated.error) return res.status(400).json({ message: validated.error })
 
