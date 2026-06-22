@@ -3,6 +3,7 @@ import { Router } from 'express'
 import multer from 'multer'
 
 const router = Router()
+const BUNNY_CDN_BASE_URL = 'https://simplichill.b-cdn.net'
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 500 * 1024 * 1024 },
@@ -64,7 +65,6 @@ async function uploadToBackblaze({ file, config }) {
 
   const storageApi = authorizeBody?.apiInfo?.storageApi
   const apiUrl = storageApi?.apiUrl
-  const downloadUrl = storageApi?.downloadUrl
   const accountAuthToken = authorizeBody?.authorizationToken
 
   const uploadUrlResponse = await fetch(`${apiUrl}/b2api/v3/b2_get_upload_url`, {
@@ -100,7 +100,7 @@ async function uploadToBackblaze({ file, config }) {
     ok: fileUploadResponse.ok,
     status: fileUploadResponse.status,
     responseBody: fileUploadBody,
-    mediaUrl: `${downloadUrl}/file/${config.bucketName}/${fileName}`,
+    mediaUrl: `${BUNNY_CDN_BASE_URL}/${fileName}`,
   }
 }
 
