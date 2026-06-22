@@ -15,22 +15,22 @@ The app calls `GET videos/feed`, which maps to the existing Express route mounte
 ## Build and run in Android Studio
 
 1. Open Android Studio.
-2. Select **File > Open** and choose this `android-tv` folder.
-3. Let Gradle sync complete.
+2. Select **File > Open** and choose the repository root (`uVideo`). Android Studio will detect the `:android-tv:app` Gradle module.
+3. Let Gradle sync complete. If you prefer opening only the TV app, you can open the `android-tv` folder directly.
 4. Create or select an Android TV emulator, such as **Android TV (1080p)**.
 5. Select the `app` run configuration.
 6. Click **Run**.
 
 ## Debug APK command
 
-From this folder:
+From the repository root:
 
 ```bash
-gradle :app:assembleDebug
+gradle :android-tv:app:assembleDebug
 ```
 
 The APK will be written to:
 
 ```text
-app/build/outputs/apk/debug/app-debug.apk
+android-tv/app/build/outputs/apk/debug/app-debug.apk
 ```
