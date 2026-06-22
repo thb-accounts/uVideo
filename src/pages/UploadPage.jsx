@@ -14,6 +14,7 @@ export default function UploadPage() {
   const [username, setUsername] = useState(user?.user_metadata?.username || '')
   const [verificationStatus, setVerificationStatus] = useState(null)
   const [profileLoading, setProfileLoading] = useState(true)
+  const uploadAbortRef = useRef(null)
 
   useEffect(() => {
     let active = true
@@ -46,7 +47,6 @@ export default function UploadPage() {
     const formData = new FormData(form)
     let mediaUrl = String(formData.get('media_url') || '').trim()
     const videoFile = formData.get('video_file')
-    const uploadProvider = String(formData.get('upload_provider') || 'backblaze').trim()
     const captionUrl = String(formData.get('caption_url') || '').trim()
     const thumbnailUrl = String(formData.get('thumbnail_url') || '').trim()
     const title = String(formData.get('title') || '').trim()
@@ -55,13 +55,15 @@ export default function UploadPage() {
     const contentType = String(formData.get('content_type') || 'video').trim()
     const points = Number(formData.get('points')) || 20
 
-    if ((!videoFile || videoFile.size === 0) && !mediaUrl) {
+    const hasLocalFile = videoFile && videoFile.size > 0
+
+    if (!hasLocalFile && !mediaUrl) {
       setStatus('Choose a video file or paste a direct MP4 link.')
       submitLockRef.current = false
       return
     }
 
-    if (mediaUrl && !mediaUrl.toLowerCase().endsWith('.mp4')) {
+    if (!hasLocalFile && mediaUrl && !mediaUrl.toLowerCase().endsWith('.mp4')) {
       setStatus('Backup links must be direct .mp4 URLs.')
       submitLockRef.current = false
       return
@@ -74,7 +76,7 @@ export default function UploadPage() {
     }
 
     setSubmitting(true)
-    setStatus(videoFile && videoFile.size > 0 ? `Uploading your video to ${uploadProvider === 'cloudinary' ? 'Cloudinary fallback' : 'Backblaze B2'}...` : 'Publishing your video...')
+    setStatus(hasLocalFile ? 'Preparing upload…' : 'Publishing video…')
 
     try {
       if (!user?.id) {
@@ -85,11 +87,38 @@ export default function UploadPage() {
         throw new Error('Set a username in Profile before publishing.')
       }
 
-      if (videoFile && videoFile.size > 0) {
-        mediaUrl = uploadProvider === 'cloudinary'
-          ? await uploadVideoToCloudinary(videoFile)
-          : await uploadVideoToBackblaze(videoFile)
-        setStatus(`Publishing your ${uploadProvider === 'cloudinary' ? 'Cloudinary fallback' : 'Backblaze B2'} video...`)
+      let storageProvider = 'external'
+      let storageKey = null
+      let cloudinaryPublicId = null
+
+      if (hasLocalFile) {
+        const controller = new AbortController()
+        uploadAbortRef.current = controller
+        try {
+          const uploadResult = await uploadVideoToBackblaze(videoFile, {
+            signal: controller.signal,
+            onProgress: (progress) => setStatus(`Uploading to Backblaze: ${progress}%`),
+          })
+          mediaUrl = uploadResult.mediaUrl
+          storageProvider = uploadResult.provider
+          storageKey = uploadResult.storageKey
+          cloudinaryPublicId = uploadResult.cloudinaryPublicId
+        } catch (backblazeError) {
+          if (backblazeError?.name === 'AbortError') throw backblazeError
+          console.warn('Backblaze direct upload failed; trying backup storage.', backblazeError)
+          setStatus('Backblaze upload failed. Trying backup storage…')
+          const uploadResult = await uploadVideoToCloudinary(videoFile, {
+            signal: controller.signal,
+            onProgress: (progress) => setStatus(`Uploading to backup storage: ${progress}%`),
+          })
+          mediaUrl = uploadResult.mediaUrl
+          storageProvider = uploadResult.provider
+          storageKey = uploadResult.storageKey
+          cloudinaryPublicId = uploadResult.cloudinaryPublicId
+        } finally {
+          uploadAbortRef.current = null
+        }
+        setStatus('Publishing video…')
       }
 
       await createContent({
@@ -101,6 +130,9 @@ export default function UploadPage() {
         media_url: mediaUrl,
         caption_url: captionUrl || null,
         thumbnail_url: thumbnailUrl || null,
+        storage_provider: storageProvider,
+        storage_key: storageKey,
+        cloudinary_public_id: cloudinaryPublicId,
         category,
         points,
         recommended: false,
@@ -109,11 +141,11 @@ export default function UploadPage() {
 
       form?.reset()
       setSelectedFileName('')
-      setStatus('Video published! You can choose another file or paste a new link to publish again.')
+      setStatus('Video published!')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Your video could not be published.'
       console.error('Publish failed:', err)
-      setStatus(message)
+      setStatus(mediaUrl && hasLocalFile ? `${message} Upload completed, but publication failed; please do not re-upload unless needed.` : message)
     } finally {
       setSubmitting(false)
       submitLockRef.current = false
@@ -177,17 +209,6 @@ export default function UploadPage() {
           </label>
         </div>
 
-        <div className="rounded-2xl border border-[#3ea6ff]/25 bg-[#3ea6ff]/10 p-4">
-          <label className="grid gap-2 text-sm font-semibold">
-            Upload destination
-            <select className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="upload_provider" defaultValue="backblaze">
-              <option value="backblaze">Backblaze B2 primary upload</option>
-              <option value="cloudinary">Cloudinary fallback upload</option>
-            </select>
-            <span className="text-xs font-normal theme-muted">Backblaze B2 is the primary upload route. Cloudinary is available separately as a fallback route.</span>
-          </label>
-        </div>
-
         <label className="grid gap-2 text-sm font-semibold">
           Video file
           <input
@@ -197,7 +218,7 @@ export default function UploadPage() {
             type="file"
             onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name || '')}
           />
-          <span className="text-xs font-normal theme-muted">{selectedFileName ? `Selected: ${selectedFileName}` : 'Choose Backblaze B2 for primary uploads, or switch the destination above to use Cloudinary fallback uploads.'}</span>
+          <span className="text-xs font-normal theme-muted">{selectedFileName ? `Selected: ${selectedFileName}. Local files upload to Backblaze first, then backup storage only if needed.` : 'Choose a local video to upload directly to Backblaze B2. Cloudinary is automatic backup only.'}</span>
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -206,10 +227,12 @@ export default function UploadPage() {
             <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="thumbnail_url" placeholder="Optional image URL" type="url" />
           </label>
           <label className="grid gap-2 text-sm font-semibold">
-            Direct MP4 fallback link
+            Direct MP4 link
             <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="media_url" placeholder="Direct MP4 URL" type="url" />
           </label>
         </div>
+
+        <p className="text-xs theme-muted">If you select a local file and paste a direct MP4 URL, SimpliChill will publish the local file and ignore the URL.</p>
 
         <label className="grid gap-2 text-sm font-semibold">
           Captions
@@ -217,9 +240,16 @@ export default function UploadPage() {
         </label>
 
         <div className="sticky bottom-2 z-10 -mx-1 rounded-3xl border border-white/10 bg-black/70 p-2 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0">
-          <button className="w-full rounded-full bg-[#3ea6ff] px-5 py-3.5 font-black text-[#06131c] transition hover:bg-[#70bdff] disabled:opacity-60" disabled={submitting}>
-            {submitting ? 'Publishing...' : 'Publish video'}
-          </button>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
+            <button className="w-full rounded-full bg-[#3ea6ff] px-5 py-3.5 font-black text-[#06131c] transition hover:bg-[#70bdff] disabled:opacity-60" disabled={submitting}>
+              {submitting ? 'Publishing...' : 'Publish video'}
+            </button>
+            {submitting && (
+              <button className="rounded-full border border-white/15 px-5 py-3.5 font-black text-white transition hover:bg-white/10" type="button" onClick={() => uploadAbortRef.current?.abort()}>
+                Cancel upload
+              </button>
+            )}
+          </div>
         </div>
         {status && <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm theme-muted" role="status">{status}</p>}
       </form>
