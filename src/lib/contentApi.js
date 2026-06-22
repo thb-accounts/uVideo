@@ -403,8 +403,19 @@ export async function createContent(payload) {
     moderation_requested_at: null,
   }
   const { data, error } = await supabase.from('contents').insert(insertPayload).select().single()
-  if (error) throw error
-  return data
+  if (!error) return data
+
+  const metadataColumns = ['storage_provider', 'storage_key', 'cloudinary_public_id']
+  const mayBeMissingMetadataColumn = metadataColumns.some((column) => String(error.message || '').includes(column))
+  if (!mayBeMissingMetadataColumn) throw error
+
+  const compatiblePayload = { ...insertPayload }
+  metadataColumns.forEach((column) => {
+    delete compatiblePayload[column]
+  })
+  const retry = await supabase.from('contents').insert(compatiblePayload).select().single()
+  if (retry.error) throw retry.error
+  return retry.data
 }
 
 export async function createReport(payload) {

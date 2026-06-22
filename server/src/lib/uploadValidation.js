@@ -1,0 +1,117 @@
+import { randomUUID } from 'node:crypto'
+
+export const ALLOWED_VIDEO_TYPES = new Set([
+  'video/mp4',
+  'video/webm',
+  'video/quicktime',
+  'video/x-matroska',
+])
+
+export const DEFAULT_MAX_VIDEO_UPLOAD_BYTES = 500 * 1024 * 1024
+
+export function cleanEnvValue(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+export function isPlaceholderValue(value) {
+  return /^your[-_]/i.test(value) || /^https:\/\/your[-.]/i.test(value)
+}
+
+export function getMaxVideoUploadBytes() {
+  const configured = Number(process.env.MAX_VIDEO_UPLOAD_BYTES)
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_MAX_VIDEO_UPLOAD_BYTES
+}
+
+function sanitizeFileName(fileName = 'upload.mp4') {
+  const leafName = String(fileName).split(/[\\/]/).pop() || 'upload.mp4'
+  const extensionMatch = leafName.match(/\.[a-z0-9]{1,12}$/i)
+  const extension = extensionMatch ? extensionMatch[0].toLowerCase() : '.mp4'
+  const baseName = leafName
+    .replace(/\.[^/.]+$/, '')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80) || 'upload'
+  return `${baseName}${extension}`
+}
+
+export function cleanFolder(folder, fallback = 'simplichill/videos') {
+  const cleaned = cleanEnvValue(folder)
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/[^a-zA-Z0-9/_-]+/g, '-')
+    .replace(/\/+/g, '/')
+  return cleaned || fallback
+}
+
+export function validateUploadRequest(body = {}) {
+  const fileName = cleanEnvValue(body.fileName)
+  const contentType = cleanEnvValue(body.contentType).toLowerCase()
+  const fileSize = Number(body.fileSize)
+  const maxBytes = getMaxVideoUploadBytes()
+
+  if (!fileName || !contentType || !Number.isFinite(fileSize) || fileSize <= 0) {
+    return { error: 'fileName, contentType, and a positive fileSize are required.' }
+  }
+
+  if (fileName.includes('\0') || fileName.length > 255 || /(^|[\\/])\.\.([\\/]|$)/.test(fileName)) {
+    return { error: 'The file name is not allowed.' }
+  }
+
+  if (!ALLOWED_VIDEO_TYPES.has(contentType)) {
+    return { error: 'Only MP4, WebM, QuickTime, and Matroska video files are supported.' }
+  }
+
+  if (fileSize > maxBytes) {
+    return { error: `Video files must be ${Math.floor(maxBytes / (1024 * 1024))} MB or smaller.` }
+  }
+
+  return { fileName, contentType, fileSize, sanitizedFileName: sanitizeFileName(fileName) }
+}
+
+export function buildStorageKey({ folder, sanitizedFileName }) {
+  return `${cleanFolder(folder)}/${Date.now()}-${randomUUID()}-${sanitizedFileName}`
+}
+
+export function getAuthenticatedUploadUser(req) {
+  const authHeader = req.headers.authorization || ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  if (!token) return null
+
+  try {
+    const [, payloadPart] = token.split('.')
+    if (!payloadPart) return { id: 'authenticated' }
+    const payload = JSON.parse(Buffer.from(payloadPart.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'))
+    if (payload.exp && payload.exp * 1000 < Date.now()) return null
+    return { id: payload.sub || payload.userId || payload.id || 'authenticated' }
+  } catch {
+    return { id: 'authenticated' }
+  }
+}
+
+// Best-effort in-memory limiter for serverless/dev. Move this to shared storage for multi-instance production enforcement.
+const buckets = new Map()
+
+export function rateLimitUploadPermission(req, res, next) {
+  const userId = req.uploadUser?.id || req.ip || 'anonymous'
+  const now = Date.now()
+  const windowMs = 10 * 60 * 1000
+  const maxRequests = 20
+  const bucket = buckets.get(userId) || { count: 0, resetAt: now + windowMs }
+  if (bucket.resetAt <= now) {
+    bucket.count = 0
+    bucket.resetAt = now + windowMs
+  }
+  bucket.count += 1
+  buckets.set(userId, bucket)
+  if (bucket.count > maxRequests) return res.status(429).json({ message: 'Too many upload requests. Please wait a few minutes and try again.' })
+  return next()
+}
+
+export function requireUploadAuth(req, res, next) {
+  const uploadUser = getAuthenticatedUploadUser(req)
+  if (!uploadUser) return res.status(401).json({ message: 'Authentication required' })
+  req.uploadUser = uploadUser
+  return next()
+}
