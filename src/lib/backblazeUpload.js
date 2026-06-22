@@ -1,4 +1,4 @@
-import { apiRequest } from './apiClient'
+import { appConfig } from '../config/appConfig'
 import { supabase } from './supabase'
 
 async function getAccessToken() {
@@ -6,18 +6,24 @@ async function getAccessToken() {
   return data.session?.access_token
 }
 
-function putFileWithProgress({ url, file, contentType, signal, onProgress }) {
+function uploadFileWithProgress({ url, token, file, signal, onProgress }) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest()
-    xhr.open('PUT', url)
-    xhr.setRequestHeader('Content-Type', contentType)
+    xhr.open('POST', url)
+    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable && onProgress) onProgress(Math.round((event.loaded / event.total) * 100))
     }
     xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) resolve()
-      else reject(new Error(`Backblaze upload failed with status ${xhr.status}.`))
+      let body = {}
+      try {
+        body = JSON.parse(xhr.responseText || '{}')
+      } catch {
+        body = {}
+      }
+      if (xhr.status >= 200 && xhr.status < 300) resolve(body)
+      else reject(new Error(body.message || `Backblaze upload failed with status ${xhr.status}.`))
     }
     xhr.onerror = () => reject(new Error('Backblaze upload failed because of a network or CORS error.'))
     xhr.onabort = () => reject(new DOMException('Upload canceled.', 'AbortError'))
@@ -27,34 +33,26 @@ function putFileWithProgress({ url, file, contentType, signal, onProgress }) {
       signal.addEventListener('abort', () => xhr.abort(), { once: true })
     }
 
-    xhr.send(file)
+    const formData = new FormData()
+    formData.append('video', file)
+    xhr.send(formData)
   })
 }
 
 export async function uploadVideoToBackblaze(file, { signal, onProgress } = {}) {
   const token = await getAccessToken()
-  const presign = await apiRequest('/backblaze/presign-upload', {
-    method: 'POST',
+  const uploadResult = await uploadFileWithProgress({
+    url: `${appConfig.apiBaseUrl}/backblaze/upload`,
     token,
-    body: {
-      fileName: file.name,
-      contentType: file.type,
-      fileSize: file.size,
-    },
-  })
-
-  await putFileWithProgress({
-    url: presign.uploadUrl,
     file,
-    contentType: file.type,
     signal,
     onProgress,
   })
 
   return {
     provider: 'backblaze',
-    mediaUrl: presign.playbackUrl,
-    storageKey: presign.storageKey,
+    mediaUrl: uploadResult.mediaUrl,
+    storageKey: uploadResult.storageKey || uploadResult.fileName,
     cloudinaryPublicId: null,
   }
 }
