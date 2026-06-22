@@ -31,3 +31,8 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+
+# Gradle / Android
+.gradle/
+build/
+local.properties
