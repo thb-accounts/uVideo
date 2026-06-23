@@ -26,6 +26,7 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="dashboard" element={<Navigate to="/" replace />} />
         <Route path="shorts" element={<DashboardPage />} />
+        <Route path="slims" element={<Navigate to="/shorts" replace />} />
         <Route path="content/:id" element={<ContentViewerPage />} />
         <Route path="u/:username" element={<PublicProfilePage />} />
         <Route path="/video/:id" element={<VideoPage />} />
