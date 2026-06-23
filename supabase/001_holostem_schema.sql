@@ -56,7 +56,7 @@ create table if not exists public.contents (
   pinned_at timestamptz,
   like_count int not null default 0,
   comment_count int not null default 0,
-  status text default 'published' check (status in ('published', 'needs_review', 'removed')),
+  status text default 'published' check (status in ('published', 'processing', 'failed', 'needs_review', 'removed')),
   moderation_method text,
   moderation_reason text,
   reviewed_by uuid references public.profiles(id),
@@ -87,6 +87,8 @@ alter table public.contents add column if not exists pinned_at timestamptz;
 alter table public.contents add column if not exists like_count int not null default 0;
 alter table public.contents add column if not exists comment_count int not null default 0;
 alter table public.contents add column if not exists status text default 'published';
+alter table public.contents drop constraint if exists contents_status_check;
+alter table public.contents add constraint contents_status_check check (status::text in ('published', 'processing', 'failed', 'needs_review', 'removed'));
 alter table public.contents add column if not exists moderation_method text;
 alter table public.contents add column if not exists moderation_reason text;
 alter table public.contents add column if not exists reviewed_by uuid references public.profiles(id);

@@ -22,3 +22,14 @@ alter table public.contents add constraint contents_single_video_provider_check 
   or (storage_provider = 'external' and bunny_video_id is null and cloudinary_public_id is null)
   or storage_provider is null
 );
+
+do $$
+begin
+  alter type public.moderation_status add value if not exists 'processing';
+  alter type public.moderation_status add value if not exists 'failed';
+exception
+  when undefined_object then null;
+end $$;
+
+alter table public.contents drop constraint if exists contents_status_check;
+alter table public.contents add constraint contents_status_check check (status::text in ('published', 'processing', 'failed', 'needs_review', 'removed'));
