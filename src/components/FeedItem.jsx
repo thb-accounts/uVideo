@@ -229,7 +229,7 @@ function DeleteModal({ onConfirm, onCancel, loading }) {
 }
 
 // ─── Main FeedItem ────────────────────────────────────────────────────────────
-export default function FeedItem({ item, isActive, onDeleted, forcePaused = false }) {
+export default function FeedItem({ item, isActive, onDeleted, forcePaused = false, immersive = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
 
@@ -332,7 +332,7 @@ export default function FeedItem({ item, isActive, onDeleted, forcePaused = fals
         <div className="absolute inset-x-0 bottom-0 h-2/5 bg-gradient-to-t from-black/85 via-black/30 to-transparent pointer-events-none" />
 
         {/* Bottom-left: creator info + caption */}
-        <div className="pointer-events-none absolute bottom-0 left-0 right-20 z-30 p-4 pb-24 text-white lg:pb-8">
+        <div className={`pointer-events-none absolute bottom-0 left-0 right-20 z-30 p-4 text-white ${immersive ? 'pb-8' : 'pb-24 lg:pb-8'}`}>
           <div className="pointer-events-auto">
             {item?.username && (
               <Link
@@ -376,7 +376,7 @@ export default function FeedItem({ item, isActive, onDeleted, forcePaused = fals
         </div>
 
         {/* Right action rail */}
-        <div className="absolute bottom-24 right-3 z-30 flex flex-col items-center gap-4 pb-2 lg:bottom-8 lg:right-2 lg:gap-5">
+        <div className={`absolute right-3 z-30 flex flex-col items-center gap-4 pb-2 lg:right-2 lg:gap-5 ${immersive ? 'bottom-8' : 'bottom-24 lg:bottom-8'}`}>
           {/* Creator avatar */}
           <div className="relative">
             <Link to={item?.username ? `/u/${item.username}` : '#'}>
