@@ -66,3 +66,43 @@ The repository includes `vercel.json` and can be deployed directly to Vercel:
 6. Set the production auth redirect URL to `https://simplichill.unrealcake8.site` in Supabase.
 
 Deploy this project only on its configured SimpliChill host.
+
+## Public Android video API
+
+The Android app can read the public catalog from:
+
+```text
+GET https://simplichill.unrealcake8.site/api/videos
+```
+
+Optional pagination parameters are supported:
+
+```text
+GET https://simplichill.unrealcake8.site/api/videos?limit=20&cursor=NEXT_CURSOR
+```
+
+`limit` defaults to `20` and is clamped to a maximum of `50`. The API only returns publicly published videos whose uploads are ready, using Bunny Stream as the primary provider and Cloudinary only for fallback uploads.
+
+Example response:
+
+```json
+{
+  "videos": [
+    {
+      "id": "2b6a4c25-1111-4222-8333-2cfc6b9b82a1",
+      "title": "Evening chill mix",
+      "description": "A relaxed SimpliChill upload.",
+      "thumbnailUrl": "https://vz-example.b-cdn.net/abc123/thumbnail.jpg",
+      "hlsUrl": "https://vz-example.b-cdn.net/abc123/playlist.m3u8",
+      "mp4FallbackUrl": null,
+      "durationSeconds": 0,
+      "createdAt": "2026-06-23T12:00:00.000Z",
+      "storageProvider": "bunny",
+      "isReady": true
+    }
+  ],
+  "nextCursor": null
+}
+```
+
+Android should call this endpoint with a normal HTTPS GET request, parse the `videos` array, and pass each `hlsUrl` to the player. If `nextCursor` is not `null`, request the next page by sending it back as the `cursor` query parameter. Native Android networking does not require browser CORS headers.
