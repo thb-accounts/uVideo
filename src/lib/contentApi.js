@@ -23,6 +23,7 @@ export async function fetchContent({ category = 'all', feed = 'videos' } = {}) {
     .from('contents')
     .select('*')
     .or('status.eq.published,status.is.null')
+    .or('upload_status.eq.ready,upload_status.is.null')
     .order('created_at', { ascending: false })
 
   if (feed === 'shorts') {
@@ -68,7 +69,7 @@ export async function fetchVideosByUsername(username, userId = '', { includeUnpu
   if (includeUnpublished) {
     query = query.or('status.is.null,status.neq.removed')
   } else {
-    query = query.or('status.eq.published,status.is.null')
+    query = query.or('status.eq.published,status.is.null').or('upload_status.eq.ready,upload_status.is.null')
   }
 
   const { data, error } = await query
@@ -397,7 +398,7 @@ export async function createContent(payload) {
   if (!hasSupabaseConfig) throw new Error('Supabase is not configured.')
   const insertPayload = {
     ...payload,
-    status: 'published',
+    status: payload.status || 'published',
     moderation_method: null,
     moderation_reason: null,
     moderation_requested_at: null,
@@ -405,7 +406,7 @@ export async function createContent(payload) {
   const { data, error } = await supabase.from('contents').insert(insertPayload).select().single()
   if (!error) return data
 
-  const metadataColumns = ['storage_provider', 'storage_key', 'cloudinary_public_id']
+  const metadataColumns = ['storage_provider', 'storage_key', 'cloudinary_public_id', 'bunny_video_id', 'bunny_library_id', 'upload_status', 'encoding_status', 'processing_error', 'uploaded_at', 'ready_at']
   const mayBeMissingMetadataColumn = metadataColumns.some((column) => String(error.message || '').includes(column))
   if (!mayBeMissingMetadataColumn) throw error
 

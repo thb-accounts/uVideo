@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { createContent, getProfile } from '../lib/contentApi'
-import { uploadVideoToBackblaze } from '../lib/backblazeUpload'
+import { uploadVideoToBunnyStream, deleteBunnyUpload } from '../lib/bunnyStreamUpload'
 import { uploadVideoToCloudinary } from '../lib/cloudinaryUpload'
 import { useAuth } from '../context/useAuth'
 
@@ -58,13 +58,13 @@ export default function UploadPage() {
     const hasLocalFile = videoFile && videoFile.size > 0
 
     if (!hasLocalFile && !mediaUrl) {
-      setStatus('Choose a video file or paste a direct MP4 link.')
+      setStatus('Choose a video file or paste a direct video link.')
       submitLockRef.current = false
       return
     }
 
-    if (!hasLocalFile && mediaUrl && !mediaUrl.toLowerCase().endsWith('.mp4')) {
-      setStatus('Backup links must be direct .mp4 URLs.')
+    if (!hasLocalFile && mediaUrl && !/^https?:\/\//i.test(mediaUrl)) {
+      setStatus('Backup links must be direct video URLs.')
       submitLockRef.current = false
       return
     }
@@ -94,31 +94,40 @@ export default function UploadPage() {
       if (hasLocalFile) {
         const controller = new AbortController()
         uploadAbortRef.current = controller
+        const metadata = { title, description, category, type: contentType, username, points }
         try {
-          const uploadResult = await uploadVideoToBackblaze(videoFile, {
+          const bunnyResult = await uploadVideoToBunnyStream(videoFile, metadata, {
             signal: controller.signal,
-            onProgress: (progress) => setStatus(`Uploading to Backblaze: ${progress}%`),
+            onStatus: setStatus,
+            onProgress: (progress) => setStatus(`Uploading to Bunny Stream: ${progress}%`),
           })
-          mediaUrl = uploadResult.mediaUrl
-          storageProvider = uploadResult.provider
-          storageKey = uploadResult.storageKey
-          cloudinaryPublicId = uploadResult.cloudinaryPublicId
-        } catch (backblazeError) {
-          if (backblazeError?.name === 'AbortError') throw backblazeError
-          console.warn('Backblaze direct upload failed; trying backup storage.', backblazeError)
-          setStatus('Backblaze upload failed. Trying backup storage…')
+          form?.reset()
+          setSelectedFileName('')
+          setStatus(bunnyResult.status?.uploadStatus === 'ready' ? 'Video is ready to publish.' : 'Video uploaded. Bunny Stream is processing it…')
+          return
+        } catch (bunnyError) {
+          if (bunnyError?.name === 'AbortError') {
+            if (bunnyError.contentId) await deleteBunnyUpload(bunnyError.contentId).catch(() => {})
+            throw bunnyError
+          }
+          if (bunnyError?.bunnyAccepted) {
+            throw new Error('Bunny Stream accepted the upload, but processing could not be confirmed. Check your dashboard before retrying.')
+          }
+          console.warn('Bunny Stream upload failed before acceptance; switching to backup upload.', bunnyError)
+          setStatus('Bunny Stream upload failed. Switching to backup upload…')
           const uploadResult = await uploadVideoToCloudinary(videoFile, {
             signal: controller.signal,
-            onProgress: (progress) => setStatus(`Uploading to backup storage: ${progress}%`),
+            onProgress: (progress) => setStatus(`Uploading to Cloudinary backup: ${progress}%`),
           })
           mediaUrl = uploadResult.mediaUrl
           storageProvider = uploadResult.provider
           storageKey = uploadResult.storageKey
           cloudinaryPublicId = uploadResult.cloudinaryPublicId
+          setStatus('Cloudinary backup upload complete.')
         } finally {
           uploadAbortRef.current = null
         }
-        setStatus('Publishing video…')
+        setStatus('Publishing backup video…')
       }
 
       await createContent({
@@ -133,6 +142,11 @@ export default function UploadPage() {
         storage_provider: storageProvider,
         storage_key: storageKey,
         cloudinary_public_id: cloudinaryPublicId,
+        bunny_video_id: null,
+        bunny_library_id: null,
+        upload_status: 'ready',
+        uploaded_at: new Date().toISOString(),
+        ready_at: new Date().toISOString(),
         category,
         points,
         recommended: false,
@@ -218,7 +232,7 @@ export default function UploadPage() {
             type="file"
             onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name || '')}
           />
-          <span className="text-xs font-normal theme-muted">{selectedFileName ? `Selected: ${selectedFileName}. Local files upload to Backblaze first, then backup storage only if needed.` : 'Choose a local video to upload directly to Backblaze B2. Cloudinary is automatic backup only.'}</span>
+          <span className="text-xs font-normal theme-muted">{selectedFileName ? `Selected: ${selectedFileName}. Local files upload to Bunny Stream first, then Cloudinary backup only if Bunny fails before accepting the upload.` : 'Choose a local video to upload directly to Bunny Stream. Cloudinary is automatic backup only.'}</span>
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -227,12 +241,12 @@ export default function UploadPage() {
             <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="thumbnail_url" placeholder="Optional image URL" type="url" />
           </label>
           <label className="grid gap-2 text-sm font-semibold">
-            Direct MP4 link
-            <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="media_url" placeholder="Direct MP4 URL" type="url" />
+            Direct video link
+            <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="media_url" placeholder="Direct video URL" type="url" />
           </label>
         </div>
 
-        <p className="text-xs theme-muted">If you select a local file and paste a direct MP4 URL, SimpliChill will publish the local file and ignore the URL.</p>
+        <p className="text-xs theme-muted">If you select a local file and paste a direct video URL, SimpliChill will publish the local file and ignore the URL.</p>
 
         <label className="grid gap-2 text-sm font-semibold">
           Captions

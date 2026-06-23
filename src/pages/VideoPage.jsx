@@ -1,3 +1,4 @@
+import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
@@ -65,6 +66,12 @@ function Player({ item }) {
         />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-black/70 to-transparent" />
       </div>
+    )
+  }
+
+  if (isBunnyStreamContent(item)) {
+    return (
+      <iframe src={bunnyEmbedUrl(item)} className="h-full w-full bg-black" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen title={item.title || 'Bunny Stream video'} />
     )
   }
 

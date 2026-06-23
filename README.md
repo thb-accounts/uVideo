@@ -52,7 +52,7 @@ Without Supabase environment variables, the frontend uses a small SimpliChill de
 
 The existing Supabase migration filenames are intentionally retained for compatibility. Run `supabase/001_holostem_schema.sql` in Supabase, then optionally run `supabase/002_storage_policies.sql` for the public `videos` bucket. Existing `user_follows` database naming is also retained internally, while the UI presents the feature as **Subscriptions**.
 
-For Cloudinary uploads, configure the variables documented in `.env.example`. Authenticated creators can upload a file through `/api/cloudinary/upload` or publish a direct `.mp4` URL.
+For uploads, configure Bunny Stream as the primary provider and Cloudinary as the direct-browser fallback using the variables documented in `.env.example`. Authenticated creators upload local video bytes directly to Bunny Stream via TUS; if Bunny fails before accepting the upload, the browser falls back to a signed direct Cloudinary upload. Raw video bytes must not pass through Express or serverless routes.
 
 ## Production deployment
 
