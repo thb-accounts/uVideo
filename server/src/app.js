@@ -6,7 +6,8 @@ import morgan from 'morgan'
 import authRoutes from './routes/auth.routes.js'
 import usersRoutes from './routes/users.routes.js'
 import videosRoutes from './routes/videos.routes.js'
-import backblazeRoutes from './routes/backblaze.routes.js'
+import bunnyStreamRoutes from './routes/bunnyStream.routes.js'
+import bunnyStreamWebhookRoutes from './routes/bunnyStreamWebhook.routes.js'
 import cloudinaryRoutes from './routes/cloudinary.routes.js'
 
 export const app = express()
@@ -16,6 +17,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 app.use(helmet())
 app.use(cors({ origin }))
 app.use(morgan('dev'))
+app.use('/api/bunny-stream/webhooks', express.raw({ type: 'application/json', limit: '256kb' }), bunnyStreamWebhookRoutes)
 app.use(express.json({ limit: '1mb' }))
 
 app.get('/api/health', (_req, res) => {
@@ -30,7 +32,7 @@ app.get('/api/health', (_req, res) => {
 app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
 app.use('/api/videos', videosRoutes)
-app.use('/api/backblaze', backblazeRoutes)
+app.use('/api/bunny-stream', bunnyStreamRoutes)
 app.use('/api/cloudinary', cloudinaryRoutes)
 
 app.use((error, _req, res, _next) => {

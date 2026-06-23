@@ -70,6 +70,22 @@ export function validateUploadRequest(body = {}) {
   return { fileName, contentType, fileSize, sanitizedFileName: sanitizeFileName(fileName) }
 }
 
+export function validateContentMetadata(body = {}) {
+  const title = cleanEnvValue(body.title)
+  const description = cleanEnvValue(body.description)
+  const category = cleanEnvValue(body.category || 'General')
+  const type = cleanEnvValue(body.type || body.contentType || 'video').toLowerCase()
+  const username = cleanEnvValue(body.username)
+  const points = Number(body.points) || 20
+
+  if (!title || title.length > 120) return { error: 'A title of 1-120 characters is required.' }
+  if (!description || description.length > 2000) return { error: 'A description of 1-2000 characters is required.' }
+  if (!category || category.length > 80) return { error: 'A category of 1-80 characters is required.' }
+  if (!['video', 'short'].includes(type)) return { error: 'type must be video or short.' }
+
+  return { title, description, category, type, username, points }
+}
+
 export function buildStorageKey({ folder, sanitizedFileName }) {
   return `${cleanFolder(folder)}/${Date.now()}-${randomUUID()}-${sanitizedFileName}`
 }

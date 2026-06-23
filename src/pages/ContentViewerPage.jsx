@@ -1,3 +1,4 @@
+import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { completeContent, fetchContentById, markContentViewed } from '../lib/contentApi'
@@ -95,7 +96,11 @@ export default function ContentViewerPage() {
         </div>
       ) : (
         <div className="overflow-hidden rounded-xl border border-white/10 bg-black">
+          {isBunnyStreamContent(content) ? (
+          <iframe src={bunnyEmbedUrl(content)} className="h-[220px] w-full md:h-[420px]" allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture" allowFullScreen title={content.title || 'Bunny Stream video'} />
+        ) : (
           <video src={mediaUrl} className="h-[220px] w-full object-cover md:h-[420px]" controls autoPlay loop />
+        )}
         </div>
       )}
 
