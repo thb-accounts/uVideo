@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { createClient } from '@supabase/supabase-js'
 
 export const ALLOWED_VIDEO_TYPES = new Set([
   'video/mp4',
@@ -90,9 +91,13 @@ export function buildStorageKey({ folder, sanitizedFileName }) {
   return `${cleanFolder(folder)}/${Date.now()}-${randomUUID()}-${sanitizedFileName}`
 }
 
-export function getAuthenticatedUploadUser(req) {
+export function getUploadAuthToken(req) {
   const authHeader = req.headers.authorization || ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+}
+
+export function getAuthenticatedUploadUser(req) {
+  const token = getUploadAuthToken(req)
   if (!token) return null
 
   try {
@@ -125,7 +130,20 @@ export function rateLimitUploadPermission(req, res, next) {
   return next()
 }
 
-export function requireUploadAuth(req, res, next) {
+export async function requireUploadAuth(req, res, next) {
+  const token = getUploadAuthToken(req)
+  if (!token) return res.status(401).json({ message: 'Authentication required' })
+
+  const url = cleanEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)
+  const key = cleanEnvValue(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY)
+  if (url && key && !isPlaceholderValue(url) && !isPlaceholderValue(key)) {
+    const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+    const { data, error } = await supabase.auth.getUser(token)
+    if (error || !data.user) return res.status(401).json({ message: 'Authentication required' })
+    req.uploadUser = { id: data.user.id, email: data.user.email || null }
+    return next()
+  }
+
   const uploadUser = getAuthenticatedUploadUser(req)
   if (!uploadUser) return res.status(401).json({ message: 'Authentication required' })
   req.uploadUser = uploadUser
