@@ -22,11 +22,11 @@ export default function App() {
   return (
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
+      <Route path="/slims" element={<DashboardPage mobileOnly />} />
       <Route path="/" element={<AppShell />}>
         <Route index element={<HomePage />} />
         <Route path="dashboard" element={<Navigate to="/" replace />} />
         <Route path="shorts" element={<DashboardPage />} />
-        <Route path="slims" element={<Navigate to="/shorts" replace />} />
         <Route path="content/:id" element={<ContentViewerPage />} />
         <Route path="u/:username" element={<PublicProfilePage />} />
         <Route path="/video/:id" element={<VideoPage />} />

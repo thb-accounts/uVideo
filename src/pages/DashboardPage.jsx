@@ -138,7 +138,7 @@ function UsageOnboarding({ onSave }) {
   )
 }
 
-export default function DashboardPage() {
+export default function DashboardPage({ mobileOnly = false }) {
   const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -151,7 +151,7 @@ export default function DashboardPage() {
   const [modalType, setModalType] = useState('')
   const [touchStart, setTouchStart] = useState(null)
   const containerRef = useRef(null)
-  const tab = new URLSearchParams(location.search).get('tab') || 'for-you'
+  const tab = mobileOnly ? 'for-you' : new URLSearchParams(location.search).get('tab') || 'for-you'
   const dayKey = getDayString()
   const isGuest = !user
   const guestLimitMinutes = getGuestAllowedMinutes(dayKey)
@@ -220,10 +220,10 @@ export default function DashboardPage() {
   useEffect(() => {
     const activeItem = feed[activeIndex]
     if (!activeItem) return
-    window.history.replaceState(null, '', `/video/${activeItem.id}`)
+    if (!mobileOnly) window.history.replaceState(null, '', `/video/${activeItem.id}`)
     const nextUsage = markVideoSeen(activeItem.id, dayKey)
     setTimeout(() => setUsageState(nextUsage), 0)
-  }, [activeIndex, dayKey, feed])
+  }, [activeIndex, dayKey, feed, mobileOnly])
 
   useEffect(() => {
     if (feed.length === 0 || modalType === 'guest-limit') return undefined
@@ -266,7 +266,7 @@ export default function DashboardPage() {
     if (nextTab === 'for-you') params.delete('tab')
     else params.set('tab', nextTab)
     const query = params.toString()
-    navigate(`/shorts${query ? `?${query}` : ''}`)
+    if (!mobileOnly) navigate(`/shorts${query ? `?${query}` : ''}`)
   }
 
   function cycleMode(direction) {
@@ -288,6 +288,7 @@ export default function DashboardPage() {
     const dx = touch.clientX - touchStart.x
     const dy = Math.abs(touch.clientY - touchStart.y)
     if (Math.abs(dx) < 60 || dy > 80) return
+    if (mobileOnly) return
     if (dx < 0) cycleMode(1)
     else cycleMode(-1)
   }
@@ -319,7 +320,7 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="flex h-[calc(100dvh-4rem)] w-full items-center justify-center bg-black">
+      <div className={`flex ${mobileOnly ? 'h-dvh' : 'h-[calc(100dvh-4rem)]'} w-full items-center justify-center bg-black`}>
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 rounded-full border-4 brand-spinner animate-spin" />
           <p className="text-[rgba(227,232,191,0.62)] text-sm">Loading feed…</p>
@@ -330,7 +331,7 @@ export default function DashboardPage() {
 
   if (feed.length === 0) {
     return (
-      <div className="flex h-[calc(100dvh-4rem)] w-full flex-col items-center justify-center bg-[var(--brand-black)] text-[var(--brand-cream)] gap-4">
+      <div className={`flex ${mobileOnly ? 'h-dvh' : 'h-[calc(100dvh-4rem)]'} w-full flex-col items-center justify-center bg-[var(--brand-black)] text-[var(--brand-cream)] gap-4`}>
         <div className="text-4xl">📭</div>
         {loadError && <p className="max-w-xs rounded-xl brand-error p-3 text-center text-sm">{loadError}</p>}
         <p className="max-w-xs text-center text-xl font-semibold">
@@ -367,21 +368,21 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="pointer-events-none fixed left-3 top-3 z-30 hidden rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur lg:block">
+      {!mobileOnly && <div className="pointer-events-none fixed left-3 top-3 z-30 hidden rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur lg:block">
         {Math.round(usageState.minutesUsed)}m / {effectiveDailyLimit + (isGuest ? 0 : usageState.extraMinutes)}m
-      </div>
-      <button
+      </div>}
+      {!mobileOnly && <button
         onClick={() => cycleMode(1)}
         className="fixed left-1/2 top-3 z-30 hidden -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur lg:block"
       >
         {tab === 'for-you' ? 'For You' : 'Explore'} · Swipe ↔
-      </button>
+      </button>}
 
       <div
         ref={containerRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className="h-[calc(100dvh-4rem)] overflow-y-scroll snap-y snap-mandatory bg-[var(--brand-black)]"
+        className={`${mobileOnly ? 'h-dvh lg:hidden' : 'h-[calc(100dvh-4rem)]'} overflow-y-scroll snap-y snap-mandatory bg-[var(--brand-black)]`}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`div::-webkit-scrollbar{display:none}`}</style>
@@ -389,17 +390,26 @@ export default function DashboardPage() {
           <div
             key={item.id}
             data-feed-index={index}
-            className="h-[calc(100dvh-4rem)] w-full snap-start snap-always"
+            className={`${mobileOnly ? 'h-dvh' : 'h-[calc(100dvh-4rem)]'} w-full snap-start snap-always`}
           >
             <FeedItem
               item={item}
               isActive={index === activeIndex}
               onDeleted={handleDeleted}
               forcePaused={modalType === 'guest-limit'}
+              immersive={mobileOnly}
             />
           </div>
         ))}
       </div>
+      {mobileOnly && (
+        <div className="hidden h-dvh items-center justify-center bg-black px-6 text-center text-white lg:flex">
+          <div>
+            <p className="text-2xl font-bold">Slims is mobile-only</p>
+            <p className="mt-2 text-sm text-white/60">Open this page on a phone-sized screen to scroll through videos.</p>
+          </div>
+        </div>
+      )}
     </>
   )
 }
