@@ -9,7 +9,11 @@ const router = Router()
 const DEFAULT_PUBLIC_LIMIT = 20
 const MAX_PUBLIC_LIMIT = 50
 const PUBLIC_VIDEO_COLUMNS = 'id,title,description,media_url,thumbnail_url,storage_provider,upload_status,status,created_at,bunny_video_id,cloudinary_public_id'
-const PUBLIC_STORAGE_PROVIDERS = ['bunny_stream', 'cloudinary']
+const INCOMPLETE_UPLOAD_STATUSES = new Set(['uploading', 'processing', 'failed'])
+
+function isHttpsUrl(value) {
+  return typeof value === 'string' && /^https:\/\//i.test(value)
+}
 
 const uploadPayloadSchema = z.object({
   caption: z.string().trim().min(1, 'Caption is required').max(280),
@@ -47,24 +51,52 @@ function decodeCursor(rawCursor) {
   }
 }
 
+function resolveStorageProvider(row) {
+  if (row?.storage_provider === 'bunny_stream' || row?.bunny_video_id) return 'bunny'
+  if (row?.storage_provider === 'cloudinary' || row?.cloudinary_public_id || /\/res\.cloudinary\.com\//i.test(row?.media_url || '')) return 'cloudinary'
+  return null
+}
+
+function bunnyThumbnailFromPlayback(row) {
+  if (!row?.bunny_video_id || !isHttpsUrl(row?.media_url)) return null
+  try {
+    const playbackUrl = new URL(row.media_url)
+    return `https://${playbackUrl.host}/${row.bunny_video_id}/thumbnail.jpg`
+  } catch {
+    return null
+  }
+}
+
+function cloudinaryThumbnailFromPlayback(row) {
+  if (!isHttpsUrl(row?.media_url) || !/\/res\.cloudinary\.com\//i.test(row.media_url)) return null
+  return row.media_url
+    .replace('/video/upload/', '/video/upload/so_0/')
+    .replace(/\.(mp4|mov|m4v|webm)([?#].*)?$/i, '.jpg')
+}
+
+function getSafeThumbnailUrl(row, storageProvider) {
+  if (isHttpsUrl(row?.thumbnail_url)) return row.thumbnail_url
+  const generated = storageProvider === 'bunny' ? bunnyThumbnailFromPlayback(row) : cloudinaryThumbnailFromPlayback(row)
+  return isHttpsUrl(generated) ? generated : null
+}
+
 function isSafePublicVideo(row) {
-  return row?.status === 'published'
-    && row?.upload_status === 'ready'
-    && PUBLIC_STORAGE_PROVIDERS.includes(row?.storage_provider)
-    && typeof row?.media_url === 'string'
-    && /^https:\/\//i.test(row.media_url)
-    && typeof row?.thumbnail_url === 'string'
-    && /^https:\/\//i.test(row.thumbnail_url)
+  const storageProvider = resolveStorageProvider(row)
+  const uploadStatus = row?.upload_status || null
+  if (row?.status !== 'published' || !storageProvider || !isHttpsUrl(row?.media_url)) return false
+  if (INCOMPLETE_UPLOAD_STATUSES.has(uploadStatus)) return false
+  if (storageProvider === 'bunny' && uploadStatus !== 'ready') return false
+  return Boolean(getSafeThumbnailUrl(row, storageProvider))
 }
 
 function toPublicVideo(row) {
-  const storageProvider = row.storage_provider === 'cloudinary' ? 'cloudinary' : 'bunny'
+  const storageProvider = resolveStorageProvider(row)
   const isMp4 = /\.mp4(?:$|[?#])/i.test(row.media_url)
   return {
     id: row.id,
     title: row.title,
     description: row.description || null,
-    thumbnailUrl: row.thumbnail_url,
+    thumbnailUrl: getSafeThumbnailUrl(row, storageProvider),
     hlsUrl: row.media_url,
     mp4FallbackUrl: storageProvider === 'cloudinary' && isMp4 ? row.media_url : null,
     durationSeconds: 0,
@@ -89,10 +121,7 @@ router.get('/', async (req, res) => {
       .from('contents')
       .select(PUBLIC_VIDEO_COLUMNS)
       .eq('status', 'published')
-      .eq('upload_status', 'ready')
-      .in('storage_provider', PUBLIC_STORAGE_PROVIDERS)
       .not('media_url', 'is', null)
-      .not('thumbnail_url', 'is', null)
       .order('created_at', { ascending: false })
       .order('id', { ascending: false })
       .limit(limit + 1)

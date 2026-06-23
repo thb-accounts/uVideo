@@ -106,3 +106,5 @@ Example response:
 ```
 
 Android should call this endpoint with a normal HTTPS GET request, parse the `videos` array, and pass each `hlsUrl` to the player. If `nextCursor` is not `null`, request the next page by sending it back as the `cursor` query parameter. Native Android networking does not require browser CORS headers.
+
+If the endpoint returns an empty list, confirm that at least one uploaded content row is published and playable. Bunny Stream rows must have `status = 'published'`, `upload_status = 'ready'`, a Bunny `playlist.m3u8` `media_url`, and either `thumbnail_url` or `bunny_video_id` so the API can return a public Bunny thumbnail. Cloudinary fallback rows must have `status = 'published'`, a Cloudinary HTTPS `media_url`, and must not have `upload_status` set to `uploading`, `processing`, or `failed`; if `thumbnail_url` is missing, the API derives a safe Cloudinary poster URL from the playback URL. Direct external links and YouTube embeds are not included in this Android playback API.
