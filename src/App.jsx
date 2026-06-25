@@ -23,6 +23,7 @@ export default function App() {
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/slims" element={<DashboardPage mobileOnly />} />
+      <Route path="/limitstart" element={<DashboardPage mobileOnly forceLimitStart />} />
       <Route path="/" element={<AppShell />}>
         <Route index element={<HomePage />} />
         <Route path="dashboard" element={<Navigate to="/" replace />} />

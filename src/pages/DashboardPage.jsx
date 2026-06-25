@@ -55,8 +55,12 @@ function MindfulModal({
     onContinue()
   }
 
+  const isHardGuestLimit = type === 'guest-limit'
+
   const title =
-    type === 'eighty'
+    type === 'guest-limit'
+      ? 'Slims screen-time limit reached'
+      : type === 'eighty'
       ? 'You are close to today\'s watch goal'
       : type === 'session'
         ? 'Session complete'
@@ -64,7 +68,7 @@ function MindfulModal({
 
   const body =
     type === 'guest-limit'
-      ? `Guests can watch Slims for ${settings.dailyLimitMinutes} minutes today. Enter a code ending or starting with IB1, AP14, or QB2 to unlock more time.`
+      ? `Guests can watch Slims for 30 minutes. Enter a code ending with NIM, NUM, SCI, or QSAR to extend to 1 hour total.`
       : type === 'eighty'
         ? `Today: ${Math.round(usage.minutesUsed)} / ${settings.dailyLimitMinutes} minutes.`
         : type === 'session'
@@ -72,16 +76,19 @@ function MindfulModal({
           : `Today: ${Math.round(usage.minutesUsed)} / ${settings.dailyLimitMinutes + usage.extraMinutes} minutes.`
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4" onClick={onClose}>
-      <div className="theme-card w-full max-w-md rounded-2xl border p-4" onClick={(event) => event.stopPropagation()}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center" onClick={isHardGuestLimit ? undefined : onClose}>
+      <div className="theme-card w-full max-w-md rounded-3xl border p-5 shadow-2xl sm:p-6" onClick={(event) => event.stopPropagation()}>
         <p className="text-lg font-semibold">{title}</p>
         <p className="mt-1 text-sm theme-muted">{body}</p>
         {isGuestLocked ? (
-          <form className="mt-4 grid gap-2" onSubmit={(event) => { event.preventDefault(); const result = onApplyCode(code); setCodeMessage(result.message) }}>
-            <input className="theme-input rounded-xl border px-3 py-2 text-sm" value={code} onChange={(event) => setCode(event.target.value)} placeholder="Enter time code" />
-            {codeMessage && <p className="text-xs theme-muted">{codeMessage}</p>}
-            <button className="rounded-full brand-button px-4 py-2 text-sm font-semibold" type="submit">Apply code</button>
-            <Link className="rounded-full border border-white/20 px-4 py-2 text-center text-sm" to="/auth">Sign in for unrestricted Slims</Link>
+          <form className="mt-5 grid gap-3" onSubmit={(event) => { event.preventDefault(); const result = onApplyCode(code); setCodeMessage(result.message) }}>
+            <label className="grid gap-2 text-sm font-medium">
+              Extension code
+              <input className="theme-input rounded-2xl border px-4 py-3 text-base" value={code} onChange={(event) => setCode(event.target.value)} placeholder="Example: ABC123QSAR" autoComplete="off" />
+            </label>
+            {codeMessage && <p className={`rounded-2xl px-3 py-2 text-sm ${codeMessage.startsWith('Invalid') ? 'brand-error' : 'theme-muted'}`}>{codeMessage}</p>}
+            <button className="rounded-full brand-button px-4 py-3 text-sm font-semibold" type="submit">Extend to 1 hour total</button>
+            <Link className="rounded-full border border-white/20 px-4 py-3 text-center text-sm" to="/auth">Sign in for unrestricted Slims</Link>
           </form>
         ) : (
           <div className="mt-4 grid gap-2">
@@ -138,7 +145,7 @@ function UsageOnboarding({ onSave }) {
   )
 }
 
-export default function DashboardPage({ mobileOnly = false }) {
+export default function DashboardPage({ mobileOnly = false, forceLimitStart = false }) {
   const { user } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
@@ -151,6 +158,7 @@ export default function DashboardPage({ mobileOnly = false }) {
   const [modalType, setModalType] = useState('')
   const [touchStart, setTouchStart] = useState(null)
   const containerRef = useRef(null)
+  const forceLimitStartedRef = useRef(false)
   const tab = mobileOnly ? 'for-you' : new URLSearchParams(location.search).get('tab') || 'for-you'
   const dayKey = getDayString()
   const isGuest = !user
@@ -235,6 +243,12 @@ export default function DashboardPage({ mobileOnly = false }) {
   }, [dayKey, feed.length, modalType, tab])
 
   useEffect(() => {
+    if (!forceLimitStart || !isGuest || modalType || forceLimitStartedRef.current) return
+    forceLimitStartedRef.current = true
+    setTimeout(() => setModalType('guest-limit'), 0)
+  }, [forceLimitStart, isGuest, modalType])
+
+  useEffect(() => {
     if (modalType) return
     if (isGuest && usageRatio >= 1) {
       setTimeout(() => setModalType('guest-limit'), 0)
@@ -304,7 +318,7 @@ export default function DashboardPage({ mobileOnly = false }) {
     if (!result.ok) return { message: result.message }
     setUsageSettings((current) => ({ ...current }))
     setModalType('')
-    return { message: `${result.grant.token} accepted. You now have ${result.grant.minutes} minutes today.` }
+    return { message: `${result.grant.token} accepted. Your guest Slims limit is now 1 hour total.` }
   }
 
   function handleTakeBreak() {
@@ -359,7 +373,7 @@ export default function DashboardPage({ mobileOnly = false }) {
           type={modalType}
           settings={{ ...usageSettings, dailyLimitMinutes: effectiveDailyLimit }}
           usage={usageState}
-          onClose={() => setModalType('')}
+          onClose={modalType === 'guest-limit' ? undefined : () => setModalType('')}
           onTakeBreak={handleTakeBreak}
           onContinue={handleContinue}
           isGuestLocked={modalType === 'guest-limit'}
