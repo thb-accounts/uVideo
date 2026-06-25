@@ -4,11 +4,9 @@ const GUEST_CODE_KEY_PREFIX = 'holostem_guest_code_'
 
 export const GUEST_DEFAULT_LIMIT_MINUTES = 30
 
-const guestCodeDurations = [
-  { token: 'IB1', minutes: 35 },
-  { token: 'AP14', minutes: 60 },
-  { token: 'QB2', minutes: 40 },
-]
+const GUEST_EXTENDED_LIMIT_MINUTES = 60
+const validGuestCodeEndings = ['NIM', 'NUM', 'SCI', 'QSAR']
+
 
 const defaultSettings = {
   onboarded: false,
@@ -154,18 +152,18 @@ export function getGuestCodeGrant(dayKey = getDayKey()) {
 }
 
 export function getGuestAllowedMinutes(dayKey = getDayKey()) {
-  return getGuestCodeGrant(dayKey)?.minutes || GUEST_DEFAULT_LIMIT_MINUTES
+  return Math.min(getGuestCodeGrant(dayKey)?.minutes || GUEST_DEFAULT_LIMIT_MINUTES, GUEST_EXTENDED_LIMIT_MINUTES)
 }
 
 export function applyGuestCode(code, dayKey = getDayKey()) {
   const normalized = String(code || '').trim().toUpperCase()
-  const match = guestCodeDurations.find(({ token }) => normalized.startsWith(token) || normalized.endsWith(token))
+  const matchingEnding = validGuestCodeEndings.find((ending) => normalized.endsWith(ending))
 
-  if (!match) {
-    return { ok: false, message: 'Code must start or end with IB1, AP14, or QB2.' }
+  if (!matchingEnding) {
+    return { ok: false, message: 'Invalid code. Please enter a valid extension code.' }
   }
 
-  const grant = { code: normalized, token: match.token, minutes: match.minutes, appliedAt: new Date().toISOString() }
+  const grant = { code: normalized, token: matchingEnding, minutes: GUEST_EXTENDED_LIMIT_MINUTES, appliedAt: new Date().toISOString() }
   if (typeof window !== 'undefined') {
     localStorage.setItem(`${GUEST_CODE_KEY_PREFIX}${dayKey}`, JSON.stringify(grant))
   }
