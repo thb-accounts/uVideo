@@ -32,6 +32,26 @@ function parsePublicLimit(rawLimit) {
   return Math.min(parsed, MAX_PUBLIC_LIMIT)
 }
 
+function parsePublicSearch(rawSearch) {
+  if (rawSearch === undefined) return { search: '' }
+  if (Array.isArray(rawSearch) || typeof rawSearch !== 'string') return { error: 'q must be a string' }
+  const search = rawSearch.trim().replace(/\s+/g, ' ')
+  if (search.length > 100) return { error: 'q must be 100 characters or fewer' }
+  return { search }
+}
+
+function escapePostgrestPattern(value) {
+  // PostgREST's `or` grammar treats these characters as syntax. Removing them
+  // keeps the value data-only; the final in-process check below is authoritative.
+  return value.replace(/[(),.%_\\]/g, ' ').replace(/\s+/g, ' ').trim()
+}
+
+function matchesPublicSearch(row, search) {
+  if (!search) return true
+  const haystack = `${row?.title || ''} ${row?.description || ''}`.toLocaleLowerCase()
+  return haystack.includes(search.toLocaleLowerCase())
+}
+
 function encodeCursor(row) {
   return Buffer.from(JSON.stringify({ createdAt: row.created_at, id: row.id }), 'utf8').toString('base64url')
 }
@@ -113,6 +133,9 @@ router.get('/', async (req, res) => {
   const { cursor, error: cursorError } = decodeCursor(req.query.cursor)
   if (cursorError) return res.status(400).json({ message: cursorError })
 
+  const { search, error: searchError } = parsePublicSearch(req.query.q)
+  if (searchError) return res.status(400).json({ message: searchError })
+
   try {
     const supabase = getSupabaseForRequest(req)
     if (!supabase) return res.status(500).json({ message: 'Unable to load videos' })
@@ -126,6 +149,12 @@ router.get('/', async (req, res) => {
       .order('id', { ascending: false })
       .limit(limit + 1)
 
+    const searchPattern = escapePostgrestPattern(search)
+    if (search && !searchPattern) return res.json({ videos: [], nextCursor: null })
+    if (searchPattern) {
+      query = query.or(`title.ilike.%${searchPattern}%,description.ilike.%${searchPattern}%`)
+    }
+
     if (cursor) {
       query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`)
     }
@@ -133,7 +162,7 @@ router.get('/', async (req, res) => {
     const { data, error } = await query
     if (error) throw error
 
-    const safeRows = (data ?? []).filter(isSafePublicVideo)
+    const safeRows = (data ?? []).filter(isSafePublicVideo).filter((row) => matchesPublicSearch(row, search))
     const pageRows = safeRows.slice(0, limit)
     const nextCursor = safeRows.length > limit ? encodeCursor(pageRows[pageRows.length - 1]) : null
 

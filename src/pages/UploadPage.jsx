@@ -98,12 +98,11 @@ export default function UploadPage() {
         try {
           const bunnyResult = await uploadVideoToBunnyStream(videoFile, metadata, {
             signal: controller.signal,
-            onStatus: setStatus,
-            onProgress: (progress) => setStatus(`Uploading to Bunny Stream: ${progress}%`),
+            onProgress: (progress) => setStatus(`Uploading video: ${progress}%`),
           })
           form?.reset()
           setSelectedFileName('')
-          setStatus(bunnyResult.status?.uploadStatus === 'ready' ? 'Video is ready to publish.' : 'Video uploaded. Bunny Stream is processing it…')
+          setStatus(bunnyResult.status?.uploadStatus === 'ready' ? 'Video is ready to publish.' : 'Video uploaded. Processing…')
           return
         } catch (bunnyError) {
           if (bunnyError?.name === 'AbortError') {
@@ -111,19 +110,19 @@ export default function UploadPage() {
             throw bunnyError
           }
           if (bunnyError?.bunnyAccepted) {
-            throw new Error('Bunny Stream accepted the upload, but processing could not be confirmed. Check your dashboard before retrying.')
+            throw new Error('The upload was accepted, but processing could not be confirmed. Check your dashboard before retrying.')
           }
-          console.warn('Bunny Stream upload failed before acceptance; switching to backup upload.', bunnyError)
-          setStatus('Bunny Stream upload failed. Switching to backup upload…')
+          console.warn('Primary upload failed before acceptance; switching to backup upload.', bunnyError)
+          setStatus('Primary upload failed. Switching to backup upload…')
           const uploadResult = await uploadVideoToCloudinary(videoFile, {
             signal: controller.signal,
-            onProgress: (progress) => setStatus(`Uploading to Cloudinary backup: ${progress}%`),
+            onProgress: (progress) => setStatus(`Uploading backup: ${progress}%`),
           })
           mediaUrl = uploadResult.mediaUrl
           storageProvider = uploadResult.provider
           storageKey = uploadResult.storageKey
           cloudinaryPublicId = uploadResult.cloudinaryPublicId
-          setStatus('Cloudinary backup upload complete.')
+          setStatus('Backup upload complete.')
         } finally {
           uploadAbortRef.current = null
         }
@@ -186,8 +185,8 @@ export default function UploadPage() {
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
-            <h1 className="text-3xl font-black leading-tight sm:text-5xl">Upload to SimpliChill</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">Share a video, tutorial, creator story, or slim with the SimpliChill community.</p>
+            <h1 className="text-3xl font-black leading-tight sm:text-5xl">Upload to uc8Video</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">Share a video, tutorial, creator story, or slim with the uc8Video community.</p>
           </div>
           <p className="w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white/80">@{username || 'set-username-in-profile'}</p>
         </div>
@@ -232,7 +231,7 @@ export default function UploadPage() {
             type="file"
             onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name || '')}
           />
-          <span className="text-xs font-normal theme-muted">{selectedFileName ? `Selected: ${selectedFileName}. Local files upload to Bunny Stream first, then Cloudinary backup only if Bunny fails before accepting the upload.` : 'Choose a local video to upload directly to Bunny Stream. Cloudinary is automatic backup only.'}</span>
+          <span className="text-xs font-normal theme-muted">{selectedFileName ? `Selected: ${selectedFileName}` : 'Choose a local video to upload.'}</span>
         </label>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -246,7 +245,7 @@ export default function UploadPage() {
           </label>
         </div>
 
-        <p className="text-xs theme-muted">If you select a local file and paste a direct video URL, SimpliChill will publish the local file and ignore the URL.</p>
+        <p className="text-xs theme-muted">If you select a local file and paste a direct video URL, uc8Video will publish the local file and ignore the URL.</p>
 
         <label className="grid gap-2 text-sm font-semibold">
           Captions

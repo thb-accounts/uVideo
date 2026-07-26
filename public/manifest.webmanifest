@@ -1,6 +1,6 @@
 {
-  "name": "SimpliChill",
-  "short_name": "SimpliChill",
+  "name": "uc8Video",
+  "short_name": "uc8Video",
   "id": "/",
   "scope": "/",
   "lang": "en",
@@ -17,9 +17,9 @@
   ],
   "icons": [
     {
-      "src": "https://unrealcake8.site/cdn-hls/simplychill/logo.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
     }
   ]
 }

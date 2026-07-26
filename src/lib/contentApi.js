@@ -1,5 +1,6 @@
 import { fallbackContent } from '../data/fallbackContent'
 import { hasSupabaseConfig, supabase } from './supabase'
+import { apiRequest } from './apiClient'
 
 // ─── Content ──────────────────────────────────────────────────────────────────
 
@@ -7,6 +8,24 @@ export function isShortContent(item = {}) {
   const type = String(item.type || '').trim().toLowerCase()
   const category = String(item.category || '').trim().toLowerCase()
   return type === 'short' || type === 'slim' || category === 'shorts' || category === 'slims'
+}
+
+export async function searchPublicVideos(search = '') {
+  const query = new URLSearchParams()
+  query.set('limit', '50')
+  if (search.trim()) query.set('q', search.trim())
+  const response = await apiRequest(`/videos?${query}`)
+  return (response.videos ?? []).map((video) => ({
+    id: video.id,
+    title: video.title,
+    description: video.description,
+    media_url: video.hlsUrl || video.mp4FallbackUrl,
+    thumbnail_url: video.thumbnailUrl,
+    created_at: video.createdAt,
+    storage_provider: video.storageProvider,
+    upload_status: video.isReady ? 'ready' : null,
+    type: 'video',
+  }))
 }
 
 export async function fetchContent({ category = 'all', feed = 'videos' } = {}) {
