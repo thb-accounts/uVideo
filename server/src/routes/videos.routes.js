@@ -8,7 +8,7 @@ const router = Router()
 
 const DEFAULT_PUBLIC_LIMIT = 20
 const MAX_PUBLIC_LIMIT = 50
-const PUBLIC_VIDEO_COLUMNS = 'id,title,description,media_url,thumbnail_url,storage_provider,upload_status,status,created_at,bunny_video_id,cloudinary_public_id'
+const PUBLIC_VIDEO_COLUMNS = 'id,title,description,media_url,thumbnail_url,storage_provider,upload_status,status,created_at,bunny_video_id,bunny_library_id,cloudinary_public_id'
 const INCOMPLETE_UPLOAD_STATUSES = new Set(['uploading', 'processing', 'failed'])
 
 function isHttpsUrl(value) {

@@ -116,7 +116,7 @@ router.get('/videos/:contentId/status', requireUploadAuth, async (req, res, next
     if (!content) return res.status(404).json({ message: 'Content not found.' })
     const video = await getBunnyVideo(content.bunny_video_id)
     await supabase.from('contents').update(statusFields(video)).eq('id', content.id)
-    return res.json({ contentId: content.id, storageProvider: 'bunny_stream', uploadStatus: video.uploadStatus, isPlayable: video.isPlayable, playbackUrl: video.playbackUrl, thumbnailUrl: video.thumbnailUrl, failureMessage: video.failureMessage })
+    return res.json({ contentId: content.id, storageProvider: 'bunny_stream', uploadStatus: video.uploadStatus, isPlayable: video.isPlayable, playbackUrl: video.playbackUrl, embedUrl: video.embedUrl, thumbnailUrl: video.thumbnailUrl, failureMessage: video.failureMessage })
   } catch (error) {
     next(error)
   }

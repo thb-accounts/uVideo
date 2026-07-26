@@ -10,6 +10,7 @@ import {
 } from '../lib/contentApi'
 import { readUiSettings } from '../lib/uiSettings'
 import { parseVTT, formatBionic } from '../lib/captionUtils'
+import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
 
 // ─── Video / Embed Player ─────────────────────────────────────────────────────
 
@@ -100,6 +101,36 @@ function FeedPlayer({ item, isActive, isPaused, settings }) {
   if (!item) return null
 
   const youtubeDetails = getYouTubeEmbedDetails(mediaUrl)
+
+  if (isBunnyStreamContent(item)) {
+    const src = bunnyEmbedUrl(item, {
+      autoplay: isActive && !isPaused,
+      muted: isMuted,
+      loop: true,
+      preload: isActive,
+    })
+    if (!src) return <div className="grid h-full w-full place-items-center bg-black text-white/70">Video unavailable</div>
+    return (
+      <div className="relative h-full w-full bg-black">
+        <iframe
+          key={src}
+          title={item.title || 'Bunny Stream video'}
+          src={src}
+          className="h-full w-full"
+          allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+        {isMuted && (
+          <button
+            onClick={(event) => { event.stopPropagation(); setIsMuted(false) }}
+            className="absolute inset-x-0 bottom-20 z-10 mx-auto w-fit rounded-full bg-black/70 px-4 py-2 text-sm font-bold text-white"
+          >
+            🔊 Enable Sound
+          </button>
+        )}
+      </div>
+    )
+  }
 
   if (item.type === 'mini') {
     return (
