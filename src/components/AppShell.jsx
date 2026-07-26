@@ -21,7 +21,7 @@ const navigation = [
   { to: '/?category=Tutorials', label: 'Tutorials', icon: 'tutorials' },
   { to: '/shorts', label: 'Slims', icon: 'shorts' },
   { to: '/upload', label: 'Upload', icon: 'upload' },
-  { to: '/profile', label: 'Profile', icon: 'profile' },
+  { to: 'https://live.unrealcake8.site', label: 'LIVE', icon: 'profile' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
