@@ -40,6 +40,10 @@ export function buildThumbnailUrl(videoId, config = requireConfig()) {
   return `https://${config.cdnHost}/${videoId}/thumbnail.jpg`
 }
 
+export function buildEmbedUrl(videoId, config = requireConfig()) {
+  return `https://iframe.mediadelivery.net/embed/${encodeURIComponent(config.libraryId)}/${encodeURIComponent(videoId)}`
+}
+
 export function normalizeVideo(video, config = requireConfig()) {
   const videoId = video.guid || video.videoGuid || video.id || video.videoId
   const rawStatus = Number(video.status ?? video.encodeProgressStatus ?? video.Status ?? 0)
@@ -53,6 +57,7 @@ export function normalizeVideo(video, config = requireConfig()) {
     uploadStatus: failed ? 'failed' : isPlayable ? 'ready' : 'processing',
     isPlayable: !failed && isPlayable,
     playbackUrl: !failed && isPlayable ? buildPlaybackUrl(videoId, config) : null,
+    embedUrl: videoId ? buildEmbedUrl(videoId, config) : null,
     thumbnailUrl: videoId ? buildThumbnailUrl(videoId, config) : null,
     failureMessage: failed ? 'Bunny processing failed' : null,
   }
