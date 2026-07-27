@@ -9,6 +9,8 @@ import videosRoutes from './routes/videos.routes.js'
 import bunnyStreamRoutes from './routes/bunnyStream.routes.js'
 import bunnyStreamWebhookRoutes from './routes/bunnyStreamWebhook.routes.js'
 import cloudinaryRoutes from './routes/cloudinary.routes.js'
+import diditRoutes from './routes/didit.routes.js'
+import diditWebhookRoutes from './routes/diditWebhook.routes.js'
 
 export const app = express()
 const origin = process.env.CORS_ORIGIN || 'http://localhost:5173'
@@ -18,6 +20,7 @@ app.use(helmet())
 app.use(cors({ origin }))
 app.use(morgan('dev'))
 app.use('/api/bunny-stream/webhooks', express.raw({ type: 'application/json', limit: '256kb' }), bunnyStreamWebhookRoutes)
+app.use('/api/didit/webhooks', express.raw({ type: 'application/json', limit: '256kb' }), diditWebhookRoutes)
 app.use(express.json({ limit: '1mb' }))
 
 app.get('/api/health', (_req, res) => {
@@ -34,6 +37,7 @@ app.use('/api/users', usersRoutes)
 app.use('/api/videos', videosRoutes)
 app.use('/api/bunny-stream', bunnyStreamRoutes)
 app.use('/api/cloudinary', cloudinaryRoutes)
+app.use('/api/didit', diditRoutes)
 
 app.use((error, _req, res, _next) => {
   void _next
