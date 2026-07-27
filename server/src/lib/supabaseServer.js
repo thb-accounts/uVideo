@@ -29,6 +29,13 @@ export function getSupabaseForRequest(req) {
   })
 }
 
+export function getAdminSupabase() {
+  const url = cleanEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)
+  const key = cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY)
+  if (!url || !key || isPlaceholderValue(url) || isPlaceholderValue(key)) return null
+  return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+}
+
 export function getSupabaseAuthClient() {
   const url = getSupabaseUrl()
   const key = getAnonKey()

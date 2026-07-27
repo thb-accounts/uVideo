@@ -6,6 +6,7 @@ import {
   isPlaceholderValue,
   rateLimitUploadPermission,
   requireUploadAuth,
+  requireAgeVerified,
   validateUploadRequest,
 } from '../lib/uploadValidation.js'
 
@@ -41,7 +42,7 @@ function signUploadParams(params, apiSecret) {
   return createHash('sha1').update(`${payload}${apiSecret}`).digest('hex')
 }
 
-router.post('/sign-upload', requireUploadAuth, rateLimitUploadPermission, (req, res) => {
+router.post('/sign-upload', requireUploadAuth, requireAgeVerified, rateLimitUploadPermission, (req, res) => {
   const config = getCloudinaryConfig()
   if (!config) return res.status(503).json({ message: 'Cloudinary uploads are not configured yet.' })
 
