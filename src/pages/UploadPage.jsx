@@ -3,6 +3,7 @@ import { createContent, getProfile } from '../lib/contentApi'
 import { uploadVideoToBunnyStream, deleteBunnyUpload } from '../lib/bunnyStreamUpload'
 import { uploadVideoToCloudinary } from '../lib/cloudinaryUpload'
 import { useAuth } from '../context/useAuth'
+import { Link } from 'react-router-dom'
 
 export default function UploadPage() {
   const { user } = useAuth()
@@ -23,7 +24,7 @@ export default function UploadPage() {
       async function loadProfile() {
         const profile = await getProfile(user.id)
         if (!active) return
-        setVerificationStatus(profile?.verification_status || null)
+        setVerificationStatus(profile?.age_verification_status || 'unverified')
         if (profile?.username) setUsername(profile.username)
         setProfileLoading(false)
       }
@@ -169,12 +170,13 @@ export default function UploadPage() {
     return <div className="mx-auto max-w-3xl p-4 sm:p-8"><p className="theme-muted">Checking verification status…</p></div>
   }
 
-  if (verificationStatus === 'pending') {
+  if (verificationStatus !== 'approved') {
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-8">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p>
-        <h1 className="text-3xl font-black">Verification pending</h1>
-        <p className="theme-muted">Uploads are available after your account verification status is no longer pending.</p>
+        <h1 className="text-3xl font-black">Verify your age to upload</h1>
+        <p className="theme-muted">Creators must complete Didit's identity check and be verified as 15 or older before publishing content.</p>
+        <Link className="inline-flex rounded-full bg-[#3ea6ff] px-5 py-3 font-black text-[#06131c]" to="/verification">Start age verification</Link>
       </div>
     )
   }

@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { createBunnyVideo, createTusUploadCredentials, deleteBunnyVideo, getBunnyVideo, getBunnyStreamConfig } from '../lib/bunnyStream.js'
 import { getSupabaseForRequest } from '../lib/supabaseServer.js'
-import { rateLimitUploadPermission, requireUploadAuth, validateContentMetadata, validateUploadRequest } from '../lib/uploadValidation.js'
+import { rateLimitUploadPermission, requireAgeVerified, requireUploadAuth, validateContentMetadata, validateUploadRequest } from '../lib/uploadValidation.js'
 
 const router = Router()
 
@@ -39,7 +39,7 @@ async function getOwnedContent(supabase, contentId, userId) {
   return data
 }
 
-router.post('/uploads', requireUploadAuth, rateLimitUploadPermission, async (req, res, next) => {
+router.post('/uploads', requireUploadAuth, requireAgeVerified, rateLimitUploadPermission, async (req, res, next) => {
   try {
     if (!getBunnyStreamConfig()) return res.status(503).json({ message: 'Bunny Stream not configured' })
     const supabase = requireSupabase(req, res)

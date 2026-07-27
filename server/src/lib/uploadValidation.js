@@ -149,3 +149,21 @@ export async function requireUploadAuth(req, res, next) {
   req.uploadUser = uploadUser
   return next()
 }
+
+export async function requireAgeVerified(req, res, next) {
+  const url = cleanEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)
+  const key = cleanEnvValue(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY)
+  if (!url || !key || isPlaceholderValue(url) || isPlaceholderValue(key)) {
+    return res.status(503).json({ message: 'Age verification cannot be checked.' })
+  }
+  const supabase = createClient(url, key, {
+    global: { headers: { Authorization: req.headers.authorization } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+  const { data, error } = await supabase.from('profiles').select('age_verification_status').eq('id', req.uploadUser.id).single()
+  if (error) return next(error)
+  if (data.age_verification_status !== 'approved') {
+    return res.status(403).json({ message: 'Didit age verification (15+) is required before uploading.', code: 'AGE_VERIFICATION_REQUIRED' })
+  }
+  return next()
+}

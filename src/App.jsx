@@ -13,6 +13,7 @@ import SettingsPage from './pages/SettingsPage'
 import UploadPage from './pages/UploadPage'
 import VideoPage from './pages/VideoPage'
 import ModeratorDashboardPage from './pages/ModeratorDashboardPage'
+import VerificationPage from './pages/VerificationPage'
 
 export default function App() {
   useEffect(() => {
@@ -52,6 +53,14 @@ export default function App() {
           element={(
             <RequireAuth>
               <ModeratorDashboardPage />
+            </RequireAuth>
+          )}
+        />
+        <Route
+          path="verification"
+          element={(
+            <RequireAuth>
+              <VerificationPage />
             </RequireAuth>
           )}
         />
