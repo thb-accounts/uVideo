@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { DiditSdk } from '@didit-protocol/sdk-web'
-import { createDiditSession, getDiditStatus } from '../lib/diditVerification'
+import { getDiditStatus } from '../lib/diditVerification'
+
+const verificationEmail = 'mailto:hello@unrealcake8.site?subject=Start%20account%20verification%20process&body=Hello%2C%20I%20would%20like%20to%20start%20the%20account%20verification%20process.'
 
 const statusCopy = {
   approved: 'Your age is verified. You can upload content.',
@@ -14,7 +15,6 @@ const statusCopy = {
 
 export default function VerificationPage() {
   const [verification, setVerification] = useState({ status: 'loading' })
-  const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
 
   async function refresh() {
@@ -28,35 +28,7 @@ export default function VerificationPage() {
 
   useEffect(() => {
     refresh()
-    return () => DiditSdk.shared.closeVerification?.()
   }, [])
-
-  async function startVerification() {
-    setBusy(true)
-    setMessage('Creating a secure verification session…')
-    try {
-      const session = await createDiditSession()
-      DiditSdk.shared.onComplete = (result) => {
-        setBusy(false)
-        if (result.type === 'completed') {
-          setMessage('Verification submitted. Waiting for the secure webhook result…')
-          refresh()
-        } else if (result.type === 'cancelled') {
-          setMessage('Verification closed. You can resume when you are ready.')
-        } else {
-          setMessage(result.error?.message || 'Verification could not be completed.')
-        }
-      }
-      DiditSdk.shared.startVerification({
-        url: session.verificationUrl,
-        configuration: { closeModalOnComplete: true, showExitConfirmation: true },
-      })
-      setMessage('Complete the check in the secure Didit window.')
-    } catch (error) {
-      setBusy(false)
-      setMessage(error.message)
-    }
-  }
 
   const approved = verification.status === 'approved'
   const retryable = ['unverified', 'not_started', 'declined', 'abandoned', 'expired', 'pending'].includes(verification.status)
@@ -85,9 +57,9 @@ export default function VerificationPage() {
         {approved ? (
           <Link className="inline-flex rounded-full bg-[#3ea6ff] px-6 py-3 font-black text-[#06131c]" to="/upload">Continue to upload</Link>
         ) : retryable ? (
-          <button className="rounded-full bg-[#3ea6ff] px-6 py-3 font-black text-[#06131c] disabled:opacity-60" disabled={busy} onClick={startVerification} type="button">
-            {busy ? 'Opening verification…' : 'Verify with Didit'}
-          </button>
+          <a className="inline-flex rounded-full bg-[#3ea6ff] px-6 py-3 font-black text-[#06131c]" href={verificationEmail}>
+            Email to start account verification
+          </a>
         ) : (
           <button className="rounded-full border border-white/15 px-6 py-3 font-black" onClick={refresh} type="button">Check status</button>
         )}
