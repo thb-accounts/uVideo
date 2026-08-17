@@ -21,7 +21,7 @@ const navigation = [
   { to: '/?category=Tutorials', label: 'Tutorials', icon: 'tutorials' },
   { to: '/shorts', label: 'Slims', icon: 'shorts' },
   { to: '/upload', label: 'Upload', icon: 'upload' },
-  { to: 'https://live.unrealcake8.site/live', label: 'uc8Live', icon: 'profile' },
+  { to: 'https://mplace.cc', label: 'MPlace', icon: 'profile' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
@@ -60,7 +60,7 @@ export default function AppShell() {
           ))}
         </nav>
         <div className="mt-auto border-t px-3 pt-4">
-          <p className="text-xs leading-relaxed text-[#777]">Videos for creators, coders, and community makers.</p>
+          <p className="text-xs leading-relaxed text-[#777]">Videos for everyone :D</p>
           {user ? (
             <button onClick={handleSignOut} className="mt-3 text-xs font-semibold text-[#aaa] hover:text-white">Sign out</button>
           ) : (
