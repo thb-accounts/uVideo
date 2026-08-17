@@ -38,35 +38,6 @@ export default function AuthProvider({ children }) {
     }
   }, [])
 
-  async function signUp({ email, password, fullName, username }) {
-    if (!hasSupabaseConfig) throw new Error('Configure Supabase env vars to enable auth.')
-    const emailRedirectTo =
-      import.meta.env.VITE_AUTH_REDIRECT_URL ||
-      (typeof window !== 'undefined' ? `${window.location.origin}/auth` : undefined)
-
-    const normalizedUsername = username?.trim().toLowerCase()
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { full_name: fullName, username: normalizedUsername }, emailRedirectTo },
-    })
-    if (error) throw error
-
-    if (data.user?.id) {
-      const { error: profileError } = await supabase.from('profiles').upsert({
-        id: data.user.id,
-        display_name: fullName,
-        username: normalizedUsername,
-        email,
-      })
-
-      if (profileError) throw profileError
-    }
-
-    await supabase.auth.signOut()
-  }
-
   async function signIn({ email, password }) {
     if (!hasSupabaseConfig) throw new Error('Configure Supabase env vars to enable auth.')
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
@@ -87,7 +58,6 @@ export default function AuthProvider({ children }) {
       user,
       loading,
       hasSupabaseConfig,
-      signUp,
       signIn,
       signOut,
     }),
