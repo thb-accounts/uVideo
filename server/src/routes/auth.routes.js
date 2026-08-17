@@ -20,32 +20,9 @@ function sanitizeUser(user) {
 }
 
 router.post('/register', async (req, res) => {
-  const { email, password, username, fullName } = req.body
-
-  if (!email || !password || !username || !fullName) {
-    return res.status(400).json({ message: 'Missing required fields' })
-  }
-
-  const existing = await prisma.user.findFirst({
-    where: { OR: [{ email }, { username }] },
+  return res.status(403).json({
+    message: 'Sorry, at the moment, our app is view-only, due to laws that we are legally required to comply with, we can only allow users to send requests for videos to add, Visit https://forms.gle/8LEGUUGmpbiGg8Gy5 to send us a video request!',
   })
-  if (existing) {
-    return res.status(409).json({ message: 'Email or username already in use' })
-  }
-
-  const passwordHash = await bcrypt.hash(password, 10)
-  const user = await prisma.user.create({
-    data: {
-      email,
-      username,
-      fullName,
-      passwordHash,
-      privacy: 'public',
-    },
-  })
-
-  const token = signToken({ userId: user.id })
-  return res.status(201).json({ token, user: sanitizeUser(user) })
 })
 
 router.post('/login', async (req, res) => {
