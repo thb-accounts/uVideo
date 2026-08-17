@@ -174,9 +174,9 @@ export default function UploadPage() {
     return (
       <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-8">
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p>
-        <h1 className="text-3xl font-black">Verify your age to upload</h1>
-        <p className="theme-muted">Creators must complete Didit's identity check and be verified as 15 or older before publishing content.</p>
-        <Link className="inline-flex rounded-full bg-[#3ea6ff] px-5 py-3 font-black text-[#06131c]" to="/verification">Start age verification</Link>
+        <h1 className="text-3xl font-black">Contact MVideo's Creator Team to continue</h1>
+        <p className="theme-muted">Creators must be at least 15 or above, or have a parent that owns the account, that they need to manage.</p>
+        <Link className="inline-flex rounded-full bg-[#3ea6ff] px-5 py-3 font-black text-[#06131c]" to="/verification">Get in touch</Link>
       </div>
     )
   }
@@ -188,7 +188,7 @@ export default function UploadPage() {
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
             <h1 className="text-3xl font-black leading-tight sm:text-5xl">Upload to MVideo</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">Share a video, tutorial, creator story, or slim with the MVideo community.</p>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">Share a video, tutorial, creator story, or Clip with the MVideo community.</p>
           </div>
           <p className="w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white/80">@{username || 'set-username-in-profile'}</p>
         </div>
