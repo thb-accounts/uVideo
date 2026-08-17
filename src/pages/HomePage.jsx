@@ -157,7 +157,7 @@ export default function HomePage() {
       </section>
 
       <footer className="mt-14 border-t border-white/10 py-8 text-xs leading-5 text-[#777]">
-        <p>MVideo is a platform that aims to create a safer, better social media for all./p>
+        <p>MVideo is a platform that aims to create a safer, better social media for all.</p>
       </footer>
     </div>
   )
