@@ -30,7 +30,7 @@ function VideoThumbnail({ item, index }) {
         <div className="absolute inset-0 grid place-items-center">
           <div className="text-center">
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/20 bg-black/20 text-2xl font-black text-white backdrop-blur">U</span>
-            <span className="mt-3 block text-xs font-bold uppercase tracking-[0.2em] text-white/65">uc8Video original</span>
+            <span className="mt-3 block text-xs font-bold uppercase tracking-[0.2em] text-white/65">MVideo original</span>
           </div>
         </div>
       )}
@@ -50,7 +50,7 @@ function VideoCard({ item, index }) {
         </div>
         <div className="min-w-0">
           <h3 className="line-clamp-2 text-sm font-bold leading-5 text-white group-hover:text-[#d9f3ff]">{item.title}</h3>
-          <p className="mt-1 truncate text-xs text-[#aaa]">{item.username ? `@${item.username}` : 'uc8Video creators'}</p>
+          <p className="mt-1 truncate text-xs text-[#aaa]">{item.username ? `@${item.username}` : 'MVideo creators'}</p>
           <p className="text-xs text-[#aaa]">{relativeDate(item.created_at)}</p>
           {item.category && <span className="mt-2 inline-block rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#bfe9ff]">{item.category}</span>}
         </div>
@@ -84,7 +84,7 @@ export default function HomePage() {
     request.then((content) => {
       if (!cancelled) setVideos(content || [])
     }).catch(() => {
-      if (!cancelled) setError('uc8Video could not refresh the catalog. Please try again shortly.')
+      if (!cancelled) setError('MVideo could not refresh the catalog. Please try again shortly.')
     }).finally(() => {
       if (!cancelled) setLoading(false)
     })
@@ -146,7 +146,7 @@ export default function HomePage() {
 
       <section className="mt-8">
         <div className="mb-5 flex items-end justify-between gap-4">
-          <div><h2 className="text-xl font-black">{searchTerm.trim() ? `Search results for “${searchTerm.trim()}”` : activeCategory === 'All' ? 'Recommended' : activeCategory}</h2><p className="mt-1 text-sm text-[#888]">Fresh videos from uc8Video creators</p></div>
+          <div><h2 className="text-xl font-black">{searchTerm.trim() ? `Search results for “${searchTerm.trim()}”` : activeCategory === 'All' ? 'Recommended' : activeCategory}</h2><p className="mt-1 text-sm text-[#888]">Fresh videos from MVideo creators</p></div>
           <Link to="/shorts" className="text-sm font-bold text-[#3ea6ff] hover:text-[#77c3ff]">Open Slims →</Link>
         </div>
         {loading ? (
@@ -157,7 +157,7 @@ export default function HomePage() {
       </section>
 
       <footer className="mt-14 border-t border-white/10 py-8 text-xs leading-5 text-[#777]">
-        <p>uc8Video is an open-source platform made by the UC8 Foundation, which is not a company.</p>
+        <p>MVideo is a platform that aims to create a safer, better social media for all./p>
       </footer>
     </div>
   )

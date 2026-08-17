@@ -187,8 +187,8 @@ export default function UploadPage() {
         <p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p>
         <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
-            <h1 className="text-3xl font-black leading-tight sm:text-5xl">Upload to uc8Video</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">Share a video, tutorial, creator story, or slim with the uc8Video community.</p>
+            <h1 className="text-3xl font-black leading-tight sm:text-5xl">Upload to MVideo</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">Share a video, tutorial, creator story, or slim with the MVideo community.</p>
           </div>
           <p className="w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white/80">@{username || 'set-username-in-profile'}</p>
         </div>
@@ -247,7 +247,7 @@ export default function UploadPage() {
           </label>
         </div>
 
-        <p className="text-xs theme-muted">If you select a local file and paste a direct video URL, uc8Video will publish the local file and ignore the URL.</p>
+        <p className="text-xs theme-muted">If you select a local file and paste a direct video URL, MVideo will publish the local file and ignore the URL.</p>
 
         <label className="grid gap-2 text-sm font-semibold">
           Captions

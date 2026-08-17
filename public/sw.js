@@ -1,4 +1,4 @@
-const CACHE_NAME = 'uc8video-cache-v1'
+const CACHE_NAME = 'MVideo-cache-v1'
 const urlsToCache = ['/', '/index.html', '/manifest.webmanifest']
 
 self.addEventListener('install', (event) => {
