@@ -1,14 +1,19 @@
 import { Link } from 'react-router-dom'
 
+const MPLACE_LOGO = 'https://unrealcake8.github.io/cdn-hls/mplace.png'
+
 export default function BrandLogo({ compact = false }) {
   return (
-    <Link to="/" className="group flex shrink-0 items-center gap-2" aria-label="MVideo home">
-      <span className="relative grid h-9 w-9 place-items-center overflow-hidden rounded-xl bg-[#050b15] shadow-[0_0_24px_rgba(0,200,255,0.22)] transition group-hover:scale-105">
-        <span className="bg-gradient-to-br from-[#70bdff] to-[#00c8ff] bg-clip-text text-sm font-black tracking-[-0.08em] text-transparent" aria-hidden="true">MVideo</span>
-      </span>
+    <Link to="/" className="group flex shrink-0 items-center gap-2.5" aria-label="MVideo by MPlace home">
+      <img
+        src={MPLACE_LOGO}
+        alt="MPlace"
+        className="h-8 w-auto object-contain transition group-hover:opacity-90"
+      />
       {!compact && (
-        <span className="hidden text-xl font-black sm:inline tracking-[-0.04em] text-white">
-          M<span className="text-[#3ea6ff]">Video</span>
+        <span className="hidden items-baseline gap-1 sm:flex">
+          <span className="text-lg font-black tracking-[-0.04em] text-white">MVideo</span>
+          <span className="text-[9px] font-bold uppercase tracking-[0.16em] text-[#777]">by MPlace</span>
         </span>
       )}
     </Link>
