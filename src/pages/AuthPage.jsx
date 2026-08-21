@@ -3,7 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 
 export default function AuthPage() {
-  const { user, signIn, signUp, hasSupabaseConfig } = useAuth()
+  const { user, signIn, signInWithGoogle, signUp, hasSupabaseConfig } = useAuth()
   const location = useLocation()
   const [mode, setMode] = useState('login')
   const [error, setError] = useState('')
@@ -32,6 +32,18 @@ export default function AuthPage() {
     }
   }
 
+  async function handleGoogleSignIn() {
+    setError('')
+    setStatus('Working...')
+    try {
+      await signInWithGoogle()
+      setStatus('Signed in with MPlace ID.')
+    } catch (err) {
+      setError(err.message)
+      setStatus('')
+    }
+  }
+
   return (
     <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
       <div className="w-full rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-glow">
@@ -47,6 +59,8 @@ export default function AuthPage() {
             </button>
           ))}
         </div>
+        <button type="button" onClick={handleGoogleSignIn} className="mb-3 w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 font-semibold text-white hover:bg-white/10">Continue with Google</button>
+        <div className="mb-3 flex items-center gap-3 text-xs text-slate-500"><span className="h-px flex-1 bg-white/10" /><span>or</span><span className="h-px flex-1 bg-white/10" /></div>
         <form className="space-y-3" onSubmit={handleSubmit}>
           <input className="w-full rounded-md bg-slate-800 p-2" name="email" type="email" placeholder="Email" required />
           <input className="w-full rounded-md bg-slate-800 p-2" name="password" type="password" placeholder="Password" minLength={6} required />

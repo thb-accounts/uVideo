@@ -1,15 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   createUserWithEmailAndPassword,
+  GoogleAuthProvider,
   onAuthStateChanged,
   sendEmailVerification,
   signInWithEmailAndPassword,
+  signInWithPopup,
   signOut as firebaseSignOut,
 } from 'firebase/auth'
 import { firebaseAuth } from '../lib/firebase'
 import { mplaceUidToUuid } from '../lib/mplaceIdentity'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { AuthContext } from './auth-context'
+
+const googleProvider = new GoogleAuthProvider()
+googleProvider.setCustomParameters({ prompt: 'select_account' })
 
 async function normalizeUser(account) {
   return {
@@ -57,6 +62,11 @@ export default function AuthProvider({ children }) {
     return syncProfile(credential.user)
   }
 
+  async function signInWithGoogle() {
+    const credential = await signInWithPopup(firebaseAuth, googleProvider)
+    return syncProfile(credential.user)
+  }
+
   async function signUp({ email, password }) {
     const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password)
     await sendEmailVerification(credential.user).catch(() => {})
@@ -73,6 +83,7 @@ export default function AuthProvider({ children }) {
     loading,
     hasSupabaseConfig,
     signIn,
+    signInWithGoogle,
     signUp,
     signOut,
   }), [user, loading])
