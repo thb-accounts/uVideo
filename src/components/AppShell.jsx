@@ -21,7 +21,7 @@ const navigation = [
   { to: '/?category=Tutorials', label: 'Tutorials', icon: 'tutorials' },
   { to: '/shorts', label: 'Slims', icon: 'shorts' },
   { to: '/upload', label: 'Upload', icon: 'upload' },
-  { to: 'https://mplace.cc', label: 'MPlace', icon: 'profile' },
+  { href: 'https://mplace.cc', label: 'MPlace', icon: 'profile' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
@@ -39,10 +39,11 @@ export default function AppShell() {
       <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b bg-[var(--app-panel)]/95 px-4 backdrop-blur-xl sm:gap-6 lg:px-6">
         <BrandLogo />
         <div className="mx-auto" />
+        <span className="hidden rounded-full border border-[#2a2a2a] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[#888] md:inline-flex">Safer video by MPlace</span>
         <Link to="/upload" className="hidden h-10 items-center gap-2 rounded-full bg-[var(--app-input)] px-4 text-sm font-bold transition hover:bg-[var(--app-border)] sm:flex">
           <Icon name="upload" /> Upload
         </Link>
-        <Link to={user ? '/profile' : '/auth'} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#3ea6ff] to-[#00c8ff] text-sm font-black text-[#06121a]" title={user ? 'Profile' : 'Sign in'}>
+        <Link to={user ? '/profile' : '/auth'} className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#31d75d] via-[#08b9f1] to-[#b438f0] text-sm font-black text-[#06121a]" title={user ? 'Profile' : 'Sign in'}>
           {(user?.user_metadata?.username || user?.email || 'U')[0].toUpperCase()}
         </Link>
       </header>
@@ -60,11 +61,11 @@ export default function AppShell() {
           ))}
         </nav>
         <div className="mt-auto border-t px-3 pt-4">
-          <p className="text-xs leading-relaxed text-[#777]">Videos for everyone :D</p>
+          <p className="text-xs leading-relaxed text-[#777]">MVideo is MPlace's safer video platform, built for all-ages discovery.</p>
           {user ? (
             <button onClick={handleSignOut} className="mt-3 text-xs font-semibold text-[#aaa] hover:text-white">Sign out</button>
           ) : (
-            <Link to="/auth" className="mt-3 inline-block rounded-full border border-[#3ea6ff] px-4 py-2 text-xs font-bold text-[#3ea6ff] hover:bg-[#3ea6ff]/10">Sign in</Link>
+            <Link to="/auth" className="mt-3 inline-block rounded-full border border-[#31d75d] px-4 py-2 text-xs font-bold text-[#31d75d] hover:bg-[#31d75d]/10">Sign in</Link>
           )}
         </div>
       </aside>
@@ -74,8 +75,12 @@ export default function AppShell() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t bg-[var(--app-panel)]/98 lg:hidden" aria-label="Mobile navigation">
-        {navigation.filter((item) => ['Home', 'Slims', 'Upload', 'Profile', 'Settings'].includes(item.label)).map((item) => (
-          <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({ isActive }) => `flex flex-col items-center justify-center gap-1 text-[10px] ${isActive ? 'text-[#3ea6ff]' : 'text-[#aaa]'}`}>
+        {navigation.filter((item) => ['Home', 'Slims', 'Upload', 'MPlace', 'Settings'].includes(item.label)).map((item) => item.href ? (
+          <a key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-1 text-[10px] text-[#aaa]">
+            <Icon name={item.icon} /><span>{item.label}</span>
+          </a>
+        ) : (
+          <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({ isActive }) => `flex flex-col items-center justify-center gap-1 text-[10px] ${isActive ? 'text-[#31d75d]' : 'text-[#aaa]'}`}>
             <Icon name={item.icon} /><span>{item.label}</span>
           </NavLink>
         ))}
