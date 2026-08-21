@@ -1,68 +1,81 @@
 import { useEffect, useMemo, useState } from 'react'
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  sendEmailVerification,
+  signInWithEmailAndPassword,
+  signOut as firebaseSignOut,
+} from 'firebase/auth'
+import { firebaseAuth } from '../lib/firebase'
+import { mplaceUidToUuid } from '../lib/mplaceIdentity'
 import { hasSupabaseConfig, supabase } from '../lib/supabase'
 import { AuthContext } from './auth-context'
 
-function isVerifiedUser(account) {
-  return Boolean(account?.email_confirmed_at || account?.confirmed_at || account?.user_metadata?.manual_verified === true)
+async function normalizeUser(account) {
+  return {
+    id: await mplaceUidToUuid(account.uid),
+    uid: account.uid,
+    email: account.email,
+    email_verified: account.emailVerified,
+    user_metadata: {
+      username: account.displayName || account.email?.split('@')[0] || 'MPlace user',
+      full_name: account.displayName || '',
+    },
+  }
 }
 
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(hasSupabaseConfig)
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    if (!hasSupabaseConfig) return
-
-    let active = true
-
-    supabase.auth.getUser().then(({ data }) => {
-      if (active) {
-        setUser(isVerifiedUser(data.user) ? data.user : null)
-        if (data.user && !isVerifiedUser(data.user)) supabase.auth.signOut()
-        setLoading(false)
-      }
-    })
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      const nextUser = session?.user ?? null
-      setUser(isVerifiedUser(nextUser) ? nextUser : null)
-      if (nextUser && !isVerifiedUser(nextUser)) supabase.auth.signOut()
-      setLoading(false)
-    })
-
-    return () => {
-      active = false
-      subscription.unsubscribe()
+  async function syncProfile(account) {
+    const nextUser = await normalizeUser(account)
+    if (hasSupabaseConfig) {
+      await supabase.from('profiles').upsert({
+        id: nextUser.id,
+        email: nextUser.email,
+        display_name: nextUser.user_metadata.full_name || nextUser.user_metadata.username,
+        username: nextUser.user_metadata.username,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'id' })
     }
-  }, [])
+    setUser(nextUser)
+    return nextUser
+  }
+
+  useEffect(() => onAuthStateChanged(firebaseAuth, async (account) => {
+    try {
+      if (account) await syncProfile(account)
+      else setUser(null)
+    } finally {
+      setLoading(false)
+    }
+  }), [])
 
   async function signIn({ email, password }) {
-    if (!hasSupabaseConfig) throw new Error('Configure Supabase env vars to enable auth.')
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) throw error
-    if (!isVerifiedUser(data.user)) {
-      await supabase.auth.signOut()
-      throw new Error('Your account is not verified yet. Email hello@unrealcake8.site to request your verification link, or stay logged out if you do not want to verify.')
-    }
+    const credential = await signInWithEmailAndPassword(firebaseAuth, email, password)
+    return syncProfile(credential.user)
+  }
+
+  async function signUp({ email, password }) {
+    const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password)
+    await sendEmailVerification(credential.user).catch(() => {})
+    return syncProfile(credential.user)
   }
 
   async function signOut() {
-    if (!hasSupabaseConfig) return
-    await supabase.auth.signOut()
+    await firebaseSignOut(firebaseAuth)
+    setUser(null)
   }
 
-  const value = useMemo(
-    () => ({
-      user,
-      loading,
-      hasSupabaseConfig,
-      signIn,
-      signOut,
-    }),
-    [user, loading],
-  )
+  const value = useMemo(() => ({
+    user,
+    loading,
+    hasSupabaseConfig,
+    signIn,
+    signUp,
+    signOut,
+  }), [user, loading])
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
