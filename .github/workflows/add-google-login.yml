@@ -1,0 +1,51 @@
+name: Add Google login
+
+on:
+  push:
+    branches:
+      - feat/google-login
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/google-login
+      - name: Add Google auth flow
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          provider = Path('src/context/AuthProvider.jsx')
+          s = provider.read_text()
+          s = s.replace("  createUserWithEmailAndPassword,\n", "  createUserWithEmailAndPassword,\n  GoogleAuthProvider,\n")
+          s = s.replace("  signInWithEmailAndPassword,\n", "  signInWithEmailAndPassword,\n  signInWithPopup,\n")
+          if "const googleProvider = new GoogleAuthProvider()" not in s:
+            s = s.replace("import { AuthContext } from './auth-context'\n", "import { AuthContext } from './auth-context'\n\nconst googleProvider = new GoogleAuthProvider()\ngoogleProvider.setCustomParameters({ prompt: 'select_account' })\n")
+          if "async function signInWithGoogle()" not in s:
+            s = s.replace("  async function signUp({ email, password }) {\n", "  async function signInWithGoogle() {\n    const credential = await signInWithPopup(firebaseAuth, googleProvider)\n    return syncProfile(credential.user)\n  }\n\n  async function signUp({ email, password }) {\n")
+          s = s.replace("    signIn,\n    signUp,\n", "    signIn,\n    signInWithGoogle,\n    signUp,\n")
+          provider.write_text(s)
+
+          page = Path('src/pages/AuthPage.jsx')
+          s = page.read_text()
+          s = s.replace("const { user, signIn, signUp, hasSupabaseConfig } = useAuth()", "const { user, signIn, signInWithGoogle, signUp, hasSupabaseConfig } = useAuth()")
+          if "async function handleGoogleSignIn()" not in s:
+            s = s.replace("  return (\n", "  async function handleGoogleSignIn() {\n    setError('')\n    setStatus('Working...')\n    try {\n      await signInWithGoogle()\n      setStatus('Signed in with MPlace ID.')\n    } catch (err) {\n      setError(err.message)\n      setStatus('')\n    }\n  }\n\n  return (\n", 1)
+          google = "        <button type=\"button\" onClick={handleGoogleSignIn} className=\"mb-3 w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 font-semibold text-white hover:bg-white/10\">Continue with Google</button>\n        <div className=\"mb-3 flex items-center gap-3 text-xs text-slate-500\"><span className=\"h-px flex-1 bg-white/10\" /><span>or</span><span className=\"h-px flex-1 bg-white/10\" /></div>\n"
+          if "Continue with Google" not in s:
+            s = s.replace("        <form className=\"space-y-3\" onSubmit={handleSubmit}>\n", google + "        <form className=\"space-y-3\" onSubmit={handleSubmit}>\n")
+          page.write_text(s)
+          PY
+      - name: Commit changes and remove workflow
+        run: |
+          rm .github/workflows/add-google-login.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/context/AuthProvider.jsx src/pages/AuthPage.jsx .github/workflows/add-google-login.yml
+          git commit -m "feat: add Google sign-in to MVideo"
+          git push origin HEAD:feat/google-login
