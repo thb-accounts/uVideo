@@ -24,11 +24,13 @@ export default function App() {
     <Routes>
       <Route path="/auth" element={<AuthPage />} />
       <Route path="/slims" element={<DashboardPage mobileOnly />} />
+      <Route path="/sparks" element={<Navigate to="/blinks" replace />} />
       <Route path="/limitstart" element={<DashboardPage mobileOnly forceLimitStart />} />
       <Route path="/" element={<AppShell />}>
         <Route index element={<HomePage />} />
         <Route path="dashboard" element={<Navigate to="/" replace />} />
-        <Route path="shorts" element={<DashboardPage />} />
+        <Route path="blinks" element={<DashboardPage />} />
+        <Route path="shorts" element={<Navigate to="/blinks" replace />} />
         <Route path="content/:id" element={<ContentViewerPage />} />
         <Route path="u/:username" element={<PublicProfilePage />} />
         <Route path="/video/:id" element={<VideoPage />} />
