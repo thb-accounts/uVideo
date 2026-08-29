@@ -1,58 +1,45 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { fetchContent, searchPublicVideos } from '../lib/contentApi'
 import { relativeDate } from '../lib/relativeDate'
 
-const categories = ['All', 'Tutorials', 'Coding', 'Shorts', 'General']
-const gradients = [
-  'from-[#073b4c] via-[#09647a] to-[#00a8cc]',
-  'from-[#14213d] via-[#1d4e89] to-[#3e7bff]',
-  'from-[#2b1b54] via-[#52348c] to-[#00c8ff]',
-  'from-[#102a43] via-[#176b87] to-[#64ccc5]',
-  'from-[#202020] via-[#154c79] to-[#3ea6ff]',
-]
+const categories = ['All', 'Tutorials', 'Coding', 'General']
 
 function youtubeThumbnail(url = '') {
   const match = url.match(/(?:embed\/|watch\?v=|youtu\.be\/)([\w-]{6,})/)
   return match ? `https://i.ytimg.com/vi/${match[1]}/hqdefault.jpg` : ''
 }
 
-
-function VideoThumbnail({ item, index }) {
+function VideoThumbnail({ item }) {
   const thumbnail = item.thumbnail_url || youtubeThumbnail(item.media_url)
   return (
-    <div className={`relative aspect-video overflow-hidden rounded-xl bg-gradient-to-br ${gradients[index % gradients.length]}`}>
+    <div className="relative aspect-video overflow-hidden rounded-2xl bg-gradient-to-br from-[#EEF0FF] via-[#F8F7FF] to-[#FFE8E8]">
       {thumbnail ? (
-        <img src={thumbnail} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" loading="lazy" />
+        <img src={thumbnail} alt="" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" loading="lazy" />
       ) : item.media_url && !item.media_url.includes('youtube') ? (
-        <video src={item.media_url} muted preload="metadata" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]" />
+        <video src={item.media_url} muted preload="metadata" className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]" />
       ) : (
         <div className="absolute inset-0 grid place-items-center">
-          <div className="text-center">
-            <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/20 bg-black/20 text-2xl font-black text-white backdrop-blur">U</span>
-            <span className="mt-3 block text-xs font-bold uppercase tracking-[0.2em] text-white/65">MVideo original</span>
-          </div>
+          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-white/80 text-xl font-black text-[#4F46E5] shadow-sm">▶</div>
         </div>
       )}
-      <span className="absolute bottom-2 right-2 rounded bg-black/80 px-1.5 py-0.5 text-[11px] font-bold">{item.type === 'lesson' ? 'LESSON' : item.duration || 'VIDEO'}</span>
-      {item.is_trending && <span className="absolute left-2 top-2 rounded-full bg-[#00c8ff] px-2 py-1 text-[10px] font-black uppercase tracking-wide text-[#041015]">Featured</span>}
+      <span className="absolute bottom-2 right-2 rounded-md bg-[#0F0F1A]/85 px-1.5 py-0.5 text-[11px] font-bold text-white">{item.duration || 'VIDEO'}</span>
     </div>
   )
 }
 
-function VideoCard({ item, index }) {
+function VideoCard({ item }) {
   return (
     <Link to={`/video/${item.id}`} className="group min-w-0">
-      <VideoThumbnail item={item} index={index} />
+      <VideoThumbnail item={item} />
       <div className="mt-3 flex gap-3">
-        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#3ea6ff] to-[#00c8ff] text-xs font-black text-[#071219]">
-          {(item.username || 'U')[0].toUpperCase()}
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-xs font-black text-white">
+          {(item.username || 'M')[0].toUpperCase()}
         </div>
         <div className="min-w-0">
-          <h3 className="line-clamp-2 text-sm font-bold leading-5 text-white group-hover:text-[#d9f3ff]">{item.title}</h3>
-          <p className="mt-1 truncate text-xs text-[#aaa]">{item.username ? `@${item.username}` : 'MVideo creators'}</p>
-          <p className="text-xs text-[#aaa]">{relativeDate(item.created_at)}</p>
-          {item.category && <span className="mt-2 inline-block rounded bg-white/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-[#bfe9ff]">{item.category}</span>}
+          <h3 className="line-clamp-2 text-sm font-bold leading-5 text-[var(--app-text)]">{item.title}</h3>
+          <p className="mt-1 truncate text-xs text-[var(--app-muted)]">{item.username ? `@${item.username}` : 'MPlace creator'}</p>
+          <p className="text-xs text-[var(--app-muted)]">{relativeDate(item.created_at)}</p>
         </div>
       </div>
     </Link>
@@ -61,18 +48,12 @@ function VideoCard({ item, index }) {
 
 export default function HomePage() {
   const location = useLocation()
-  const navigate = useNavigate()
   const params = new URLSearchParams(location.search)
   const requestedCategory = params.get('category') || 'All'
   const requestedSearch = params.get('search') || ''
-  const [activeCategory, setActiveCategory] = useState(requestedCategory)
   const [videos, setVideos] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [searchTerm, setSearchTerm] = useState(requestedSearch)
-
-  useEffect(() => setActiveCategory(requestedCategory), [requestedCategory])
-  useEffect(() => setSearchTerm(requestedSearch), [requestedSearch])
 
   useEffect(() => {
     let cancelled = false
@@ -81,84 +62,75 @@ export default function HomePage() {
     const request = requestedSearch.trim()
       ? searchPublicVideos(requestedSearch)
       : fetchContent({ category: 'all', feed: 'videos' })
+
     request.then((content) => {
       if (!cancelled) setVideos(content || [])
     }).catch(() => {
-      if (!cancelled) setError('MVideo could not refresh the catalog. Please try again shortly.')
+      if (!cancelled) setError('MPlace Videos could not refresh right now. Please try again shortly.')
     }).finally(() => {
       if (!cancelled) setLoading(false)
     })
+
     return () => { cancelled = true }
   }, [requestedSearch])
 
   const filteredVideos = useMemo(() => {
-    const categoryNeedle = activeCategory.toLowerCase().replace(/s$/, '')
-    const queryNeedle = searchTerm.trim().toLowerCase()
+    const categoryNeedle = requestedCategory.toLowerCase().replace(/s$/, '')
     return videos.filter((item) => {
-      const searchable = `${item.title || ''} ${item.description || ''} ${item.username || ''} ${item.category || ''} ${item.type || ''}`.toLowerCase()
-      const matchesCategory = activeCategory === 'All' || searchable.includes(categoryNeedle)
-      const matchesSearch = !queryNeedle || searchable.includes(queryNeedle)
-      return matchesCategory && matchesSearch
+      if (requestedCategory === 'All') return true
+      const searchable = `${item.title || ''} ${item.description || ''} ${item.category || ''} ${item.type || ''}`.toLowerCase()
+      return searchable.includes(categoryNeedle)
     })
-  }, [activeCategory, searchTerm, videos])
+  }, [requestedCategory, videos])
 
-  function updateUrl(nextCategory, nextSearch) {
+  function categoryHref(category) {
     const next = new URLSearchParams(location.search)
-    if (nextCategory === 'All') next.delete('category')
-    else next.set('category', nextCategory)
-    if (nextSearch.trim()) next.set('search', nextSearch.trim())
-    else next.delete('search')
-    navigate(`/${next.toString() ? `?${next}` : ''}`, { replace: true })
-  }
-
-  function selectCategory(category) {
-    setActiveCategory(category)
-    updateUrl(category, searchTerm)
-  }
-
-  function handleSearchSubmit(event) {
-    event.preventDefault()
-    updateUrl(activeCategory, searchTerm)
+    if (category === 'All') next.delete('category')
+    else next.set('category', category)
+    return `/${next.toString() ? `?${next.toString()}` : ''}`
   }
 
   return (
     <div className="mx-auto max-w-[1800px] px-4 pb-12 sm:px-6 lg:px-8">
-      <section className="sticky top-16 z-30 -mx-4 border-b border-white/5 bg-[#0f0f0f]/95 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-        <form className="mb-3 flex gap-2" onSubmit={handleSearchSubmit}>
-          <input
-            aria-label="Search videos"
-            className="theme-input min-w-0 flex-1 rounded-full border px-4 py-2 text-sm"
-            onChange={(event) => setSearchTerm(event.target.value)}
-            placeholder="Search titles, creators, descriptions..."
-            type="search"
-            value={searchTerm}
-          />
-          <button className="rounded-full bg-[#3ea6ff] px-4 py-2 text-sm font-black text-[#06131c] transition hover:bg-[#70bdff]" type="submit">Search</button>
-        </form>
+      <section className="sticky top-16 z-30 -mx-4 border-b border-[var(--app-border)] bg-[var(--app-bg)]/95 px-4 py-3 backdrop-blur-xl sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
           {categories.map((category) => (
-            <button key={category} onClick={() => selectCategory(category)} className={`shrink-0 rounded-lg px-3.5 py-1.5 text-sm font-semibold transition ${activeCategory === category ? 'bg-white text-[#0f0f0f]' : 'bg-[#272727] text-white hover:bg-[#3a3a3a]'}`}>
+            <Link key={category} to={categoryHref(category)} className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold transition ${requestedCategory === category ? 'bg-[var(--brand-primary)] text-white shadow-sm' : 'bg-[var(--app-panel)] text-[var(--app-muted)] hover:bg-[var(--brand-secondary)] hover:text-[var(--brand-primary)]'}`}>
               {category}
-            </button>
+            </Link>
           ))}
+          <Link to="/blinks" className="shrink-0 rounded-xl bg-[var(--app-panel)] px-4 py-2 text-sm font-semibold text-[var(--app-muted)] transition hover:bg-[var(--brand-secondary)] hover:text-[var(--brand-primary)]">Blinks</Link>
         </div>
       </section>
 
-      <section className="mt-8">
-        <div className="mb-5 flex items-end justify-between gap-4">
-          <div><h2 className="text-xl font-black">{searchTerm.trim() ? `Search results for “${searchTerm.trim()}”` : activeCategory === 'All' ? 'Recommended' : activeCategory}</h2><p className="mt-1 text-sm text-[#888]">Fresh videos from MVideo creators</p></div>
-          <Link to="/shorts" className="text-sm font-bold text-[#3ea6ff] hover:text-[#77c3ff]">Open Sparks →</Link>
+      <section className="pt-7">
+        <div className="mb-6 flex items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold tracking-[-0.03em] sm:text-3xl">{requestedSearch ? `Results for “${requestedSearch}”` : requestedCategory === 'All' ? 'Recommended' : requestedCategory}</h1>
+            <p className="mt-1 text-sm text-[var(--app-muted)]">Watch videos from across MPlace.</p>
+          </div>
+          <Link to="/upload" className="hidden rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-4 py-2 text-sm font-semibold text-[var(--brand-primary)] shadow-sm hover:bg-[var(--brand-secondary)] sm:block">Upload video</Link>
         </div>
+
         {loading ? (
-          <div className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{Array.from({ length: 8 }).map((_, index) => <div key={index} className="animate-pulse"><div className="aspect-video rounded-xl bg-[#202020]"/><div className="mt-3 h-4 w-4/5 rounded bg-[#202020]"/><div className="mt-2 h-3 w-1/2 rounded bg-[#181818]"/></div>)}</div>
-        ) : error ? <p className="rounded-xl border border-red-400/20 bg-red-400/10 p-4 text-sm text-red-200">{error}</p>
-          : filteredVideos.length > 0 ? <div className="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{filteredVideos.map((item, index) => <VideoCard key={item.id} item={item} index={index} />)}</div>
-            : <div className="rounded-2xl border border-dashed border-white/15 bg-[#151515] p-10 text-center"><p className="text-lg font-bold">No videos match your search yet.</p><p className="mt-2 text-sm text-[#aaa]">Be the first creator to publish one.</p><Link to="/upload" className="mt-5 inline-block rounded-full bg-[#3ea6ff] px-5 py-2 text-sm font-black text-[#06131c]">Upload a video</Link></div>}
+          <div className="grid grid-cols-1 gap-x-5 gap-y-8 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, index) => <div key={index} className="animate-pulse"><div className="aspect-video rounded-2xl bg-[var(--app-hover)]"/><div className="mt-3 h-4 w-4/5 rounded bg-[var(--app-hover)]"/><div className="mt-2 h-3 w-1/2 rounded bg-[var(--app-hover)]"/></div>)}
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm text-red-700">{error}</div>
+        ) : filteredVideos.length > 0 ? (
+          <div className="grid grid-cols-1 gap-x-5 gap-y-9 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            {filteredVideos.map((item) => <VideoCard key={item.id} item={item} />)}
+          </div>
+        ) : (
+          <div className="rounded-3xl border border-dashed border-[var(--app-border)] bg-[var(--app-panel)] p-12 text-center shadow-sm">
+            <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-[var(--brand-secondary)] text-xl text-[var(--brand-primary)]">▶</div>
+            <p className="mt-4 text-lg font-bold">No videos here yet.</p>
+            <p className="mt-1 text-sm text-[var(--app-muted)]">Try another category or publish the first one.</p>
+            <Link to="/upload" className="mt-5 inline-block rounded-full bg-[var(--brand-primary)] px-5 py-2.5 text-sm font-bold text-white">Create a video</Link>
+          </div>
+        )}
       </section>
-
-      <footer className="mt-14 border-t border-white/10 py-8 text-xs leading-5 text-[#777]">
-        <p>MVideo is a platform that aims to create a safer, better social media for all.</p>
-      </footer>
     </div>
   )
 }
