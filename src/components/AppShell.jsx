@@ -19,7 +19,7 @@ const Icon = ({ name }) => {
 const navigation = [
   { to: '/', label: 'Home', icon: 'home' },
   { to: '/?category=Tutorials', label: 'Tutorials', icon: 'tutorials' },
-  { to: '/shorts', label: 'Slims', icon: 'shorts' },
+  { to: '/blinks', label: 'Blinks', icon: 'shorts' },
   { to: '/upload', label: 'Upload', icon: 'upload' },
   { href: 'https://mplace.cc', label: 'MPlace', icon: 'profile' },
   { to: '/settings', label: 'Settings', icon: 'settings' },
@@ -75,7 +75,7 @@ export default function AppShell() {
       </main>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t bg-[var(--app-panel)]/98 lg:hidden" aria-label="Mobile navigation">
-        {navigation.filter((item) => ['Home', 'Slims', 'Upload', 'MPlace', 'Settings'].includes(item.label)).map((item) => item.href ? (
+        {navigation.filter((item) => ['Home', 'Blinks', 'Upload', 'MPlace', 'Settings'].includes(item.label)).map((item) => item.href ? (
           <a key={item.label} href={item.href} className="flex flex-col items-center justify-center gap-1 text-[10px] text-[#aaa]">
             <Icon name={item.icon} /><span>{item.label}</span>
           </a>
