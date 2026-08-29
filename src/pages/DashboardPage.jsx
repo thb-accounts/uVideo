@@ -59,7 +59,7 @@ function MindfulModal({
 
   const title =
     type === 'guest-limit'
-      ? 'Slims screen-time limit reached'
+      ? 'Blinks screen-time limit reached'
       : type === 'eighty'
       ? 'You are close to today\'s watch goal'
       : type === 'session'
@@ -68,7 +68,7 @@ function MindfulModal({
 
   const body =
     type === 'guest-limit'
-      ? `Guests can watch Slims for 30 minutes. Enter a code ending with NIM, NUM, SCI, or QSAR to extend to 1 hour total.`
+      ? `Guests can watch Blinks for 30 minutes. Enter a code ending with NIM, NUM, SCI, or QSAR to extend to 1 hour total.`
       : type === 'eighty'
         ? `Today: ${Math.round(usage.minutesUsed)} / ${settings.dailyLimitMinutes} minutes.`
         : type === 'session'
@@ -88,7 +88,7 @@ function MindfulModal({
             </label>
             {codeMessage && <p className={`rounded-2xl px-3 py-2 text-sm ${codeMessage.startsWith('Invalid') ? 'brand-error' : 'theme-muted'}`}>{codeMessage}</p>}
             <button className="rounded-full brand-button px-4 py-3 text-sm font-semibold" type="submit">Extend to 1 hour total</button>
-            <Link className="rounded-full border border-white/20 px-4 py-3 text-center text-sm" to="/auth">Sign in for unrestricted Slims</Link>
+            <Link className="rounded-full border border-white/20 px-4 py-3 text-center text-sm" to="/auth">Sign in for unrestricted Blinks</Link>
           </form>
         ) : (
           <div className="mt-4 grid gap-2">
@@ -280,7 +280,7 @@ export default function DashboardPage({ mobileOnly = false, forceLimitStart = fa
     if (nextTab === 'for-you') params.delete('tab')
     else params.set('tab', nextTab)
     const query = params.toString()
-    if (!mobileOnly) navigate(`/shorts${query ? `?${query}` : ''}`)
+    if (!mobileOnly) navigate(`/blinks${query ? `?${query}` : ''}`)
   }
 
   function cycleMode(direction) {
@@ -318,7 +318,7 @@ export default function DashboardPage({ mobileOnly = false, forceLimitStart = fa
     if (!result.ok) return { message: result.message }
     setUsageSettings((current) => ({ ...current }))
     setModalType('')
-    return { message: `${result.grant.token} accepted. Your guest Slims limit is now 1 hour total.` }
+    return { message: `${result.grant.token} accepted. Your guest Blinks limit is now 1 hour total.` }
   }
 
   function handleTakeBreak() {
@@ -352,7 +352,7 @@ export default function DashboardPage({ mobileOnly = false, forceLimitStart = fa
           {tab === 'explore' ? 'No explore posts yet from @MVideoexplore' : 'No content yet'}
         </p>
         {tab === 'explore' ? (
-          <Link to="/shorts" className="rounded-full brand-button px-6 py-2 font-semibold">
+          <Link to="/blinks" className="rounded-full brand-button px-6 py-2 font-semibold">
             Browse For You feed
           </Link>
         ) : (
@@ -419,7 +419,7 @@ export default function DashboardPage({ mobileOnly = false, forceLimitStart = fa
       {mobileOnly && (
         <div className="hidden h-dvh items-center justify-center bg-black px-6 text-center text-white lg:flex">
           <div>
-            <p className="text-2xl font-bold">Slims is mobile-only</p>
+            <p className="text-2xl font-bold">Blinks is mobile-only</p>
             <p className="mt-2 text-sm text-white/60">Open this page on a phone-sized screen to scroll through videos.</p>
           </div>
         </div>
