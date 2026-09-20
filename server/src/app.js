@@ -11,6 +11,7 @@ import bunnyStreamWebhookRoutes from './routes/bunnyStreamWebhook.routes.js'
 import cloudinaryRoutes from './routes/cloudinary.routes.js'
 import diditRoutes from './routes/didit.routes.js'
 import diditWebhookRoutes from './routes/diditWebhook.routes.js'
+import profilesRoutes from './routes/profiles.routes.js'
 
 export const app = express()
 const origin = process.env.CORS_ORIGIN || 'http://localhost:5173'
@@ -34,6 +35,7 @@ app.get('/api/health', (_req, res) => {
 
 app.use('/api/auth', authRoutes)
 app.use('/api/users', usersRoutes)
+app.use('/api/profiles', profilesRoutes)
 app.use('/api/videos', videosRoutes)
 app.use('/api/bunny-stream', bunnyStreamRoutes)
 app.use('/api/cloudinary', cloudinaryRoutes)
