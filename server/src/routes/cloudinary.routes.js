@@ -42,6 +42,22 @@ function signUploadParams(params, apiSecret) {
   return createHash('sha1').update(`${payload}${apiSecret}`).digest('hex')
 }
 
+router.post('/sign-avatar', requireUploadAuth, rateLimitUploadPermission, (req, res) => {
+  const config = getCloudinaryConfig()
+  if (!config) return res.status(503).json({ message: 'Cloudinary uploads are not configured yet.' })
+  const fileName = cleanEnvValue(req.body?.fileName)
+  const contentType = cleanEnvValue(req.body?.contentType).toLowerCase()
+  const fileSize = Number(req.body?.fileSize)
+  if (!fileName || !['image/jpeg', 'image/png', 'image/webp'].includes(contentType)) return res.status(400).json({ message: 'Profile pictures must be JPEG, PNG, or WebP.' })
+  if (!Number.isFinite(fileSize) || fileSize <= 0 || fileSize > 5 * 1024 * 1024) return res.status(400).json({ message: 'Profile pictures must be 5 MB or smaller.' })
+  const timestamp = Math.floor(Date.now() / 1000)
+  const folder = cleanFolder('mplace/profile-avatars')
+  const publicId = safePublicId(fileName)
+  const params = { folder, public_id: publicId, timestamp }
+  const signature = signUploadParams(params, config.apiSecret)
+  return res.json({ cloudName: config.cloudName, apiKey: config.apiKey, timestamp, signature, folder, publicId })
+})
+
 router.post('/sign-upload', requireUploadAuth, requireAgeVerified, rateLimitUploadPermission, (req, res) => {
   const config = getCloudinaryConfig()
   if (!config) return res.status(503).json({ message: 'Cloudinary uploads are not configured yet.' })
