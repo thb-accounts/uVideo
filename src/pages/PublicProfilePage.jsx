@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react'
 import {
   fetchVideosByUsername,
   getProfileByUsername,
-  getUserIdByUsername,
 } from '../lib/contentApi'
 
 function PublicProfileAvatar({ profile, username }) {
@@ -71,11 +70,11 @@ export default function PublicProfilePage() {
     async function load() {
       setLoadError('')
       try {
-        const [profileData, userId] = await Promise.all([
-          getProfileByUsername(username),
-          getUserIdByUsername(username),
-        ])
-        const videosData = await fetchVideosByUsername(profileData?.username || username, userId)
+        const profileData = await getProfileByUsername(username)
+        // Creator pages are public and contents already carry the creator username.
+        // Do not depend on the legacy HoloStem auth.users UUID relationship here:
+        // MPlace ID now authenticates with Firebase, so that UUID may not exist.
+        const videosData = await fetchVideosByUsername(profileData?.username || username)
         if (cancelled) return
         setProfile(profileData)
         setVideos(videosData)
