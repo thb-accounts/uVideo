@@ -38,7 +38,8 @@ export default function PublicProfilePage() {
     return () => { active = false }
   }, [username, profileId])
 
-  const likes = useMemo(() => state.videos.reduce((n, v) => n + Number(v.like_count || 0), 0), [state.videos])
+  const videos = Array.isArray(state.videos) ? state.videos : []
+  const likes = useMemo(() => videos.reduce((n, v) => n + Number(v.like_count || 0), 0), [videos])
   if (state.loading) return <div className="mx-auto max-w-5xl p-6 text-sm text-[#66736b]">Loading creator…</div>
   if (state.error) return <div className="mx-auto max-w-5xl p-6"><div className="rounded-xl border bg-white p-6"><h1 className="text-xl font-semibold">Creator unavailable</h1><p className="mt-2 text-sm text-[#66736b]">{state.error}</p></div></div>
 
@@ -49,8 +50,8 @@ export default function PublicProfilePage() {
         <div className="h-20 w-20 shrink-0 rounded-full"><Avatar profile={profile} /></div>
         <div className="min-w-0"><h1 className="truncate text-2xl font-semibold text-[#202522]">{profile.display_name || profile.username}</h1><p className="truncate text-sm text-[#66736b]">@{profile.username || username}</p>{profile.bio && <p className="mt-3 text-sm text-[#39443e]">{profile.bio}</p>}</div>
       </div>
-      <div className="mt-6 flex gap-8 border-t pt-4 text-sm"><span><strong>{state.videos.length}</strong> posts</span><span><strong>{likes}</strong> likes</span></div>
+      <div className="mt-6 flex gap-8 border-t pt-4 text-sm"><span><strong>{videos.length}</strong> posts</span><span><strong>{likes}</strong> likes</span></div>
     </section>
-    <section className="mt-5"><Posts videos={state.videos} /></section>
+    <section className="mt-5"><Posts videos={videos} /></section>
   </main>
 }
