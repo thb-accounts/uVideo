@@ -6,7 +6,10 @@ import {
   fetchVideosByUsername,
   updateContentPin,
   fetchLikedVideosForUser,
+  updateProfileAvatar,
 } from '../lib/contentApi'
+import { apiRequest } from '../lib/apiClient'
+import { firebaseAuth } from '../lib/firebase'
 
 function isSupportedAvatarUrl(value) {
   if (!value) return true
@@ -55,6 +58,8 @@ export default function ProfilePage() {
   const [likedVideos, setLikedVideos] = useState([])
   const [likedVideosLoading, setLikedVideosLoading] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
+  const [avatarUploading, setAvatarUploading] = useState(false)
+  const [avatarMessage, setAvatarMessage] = useState('')
 
   useEffect(() => {
     async function load() {
@@ -127,6 +132,44 @@ export default function ProfilePage() {
     { icon: '♡', label: 'Saved' },
   ]
 
+  async function handleAvatarChange(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file) return
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      setAvatarMessage('Choose a JPEG, PNG, or WebP image.')
+      return
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setAvatarMessage('Profile pictures must be 5 MB or smaller.')
+      return
+    }
+    setAvatarUploading(true)
+    setAvatarMessage('')
+    try {
+      const token = await firebaseAuth.currentUser?.getIdToken(false)
+      if (!token) throw new Error('Please sign in again.')
+      const signed = await apiRequest('/cloudinary/sign-avatar', { method: 'POST', token, body: { fileName: file.name, contentType: file.type, fileSize: file.size } })
+      const form = new FormData()
+      form.append('file', file)
+      form.append('api_key', signed.apiKey)
+      form.append('folder', signed.folder)
+      form.append('public_id', signed.publicId)
+      form.append('timestamp', String(signed.timestamp))
+      form.append('signature', signed.signature)
+      const upload = await fetch(`https://api.cloudinary.com/v1_1/${signed.cloudName}/image/upload`, { method: 'POST', body: form })
+      const uploaded = await upload.json()
+      if (!upload.ok || !uploaded.secure_url) throw new Error(uploaded?.error?.message || 'Profile picture upload failed.')
+      const updated = await updateProfileAvatar(uploaded.secure_url, token)
+      setProfile((current) => ({ ...current, ...updated }))
+      setAvatarMessage('Profile picture updated.')
+    } catch (error) {
+      setAvatarMessage(error?.message || 'Profile picture upload failed.')
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
   async function handleTogglePin(video) {
     const nextPinned = !video.is_pinned
     setVideos((current) => sortPinnedVideos(current.map((item) => (item.id === video.id ? { ...item, is_pinned: nextPinned, pinned_at: nextPinned ? new Date().toISOString() : null } : item))))
@@ -144,9 +187,12 @@ export default function ProfilePage() {
     <div className="theme-app-bg space-y-4 p-4 lg:p-4">
       <section className="-mx-4 -mt-4 min-h-screen bg-[#121212] px-4 pb-28 pt-20 text-white lg:hidden">
         <div className="flex flex-col items-center text-center">
-          <div className="relative h-20 w-20 rounded-full border border-white/20 bg-[#151a17]">
+          <label className="relative h-20 w-20 cursor-pointer rounded-full border border-white/20 bg-[#151a17]" title="Change profile picture">
             <ProfileAvatar profile={profile} />
-          </div>
+            <span className="absolute inset-x-0 bottom-0 rounded-b-full bg-black/65 py-1 text-[10px] font-semibold">{avatarUploading ? 'Uploading…' : 'Change'}</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={avatarUploading} onChange={handleAvatarChange} />
+          </label>
+          {avatarMessage ? <p className="mt-2 text-xs text-white/60">{avatarMessage}</p> : null}
           <div className="mt-4 flex max-w-full items-center justify-center gap-2">
             <ProfileBadgeIcon />
             <h1 className="truncate text-2xl font-black tracking-tight">{displayName}</h1>
@@ -259,7 +305,11 @@ export default function ProfilePage() {
       </div>
       <section className="theme-card hidden rounded-xl border p-4 lg:block">
         <div className="flex items-start gap-4">
-          <div className="h-20 w-20 rounded-full"><ProfileAvatar profile={profile} /></div>
+          <label className="relative h-20 w-20 cursor-pointer rounded-full" title="Change profile picture">
+            <ProfileAvatar profile={profile} />
+            <span className="absolute inset-x-0 bottom-0 rounded-b-full bg-black/65 py-1 text-center text-[10px] font-semibold text-white">{avatarUploading ? 'Uploading…' : 'Change'}</span>
+            <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={avatarUploading} onChange={handleAvatarChange} />
+          </label>
           <div>
             <h2 className="text-xl font-bold">{displayName}</h2>
             <p className="theme-muted">@{handle}</p>

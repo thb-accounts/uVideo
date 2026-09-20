@@ -293,8 +293,9 @@ export async function getDashboardData(userId) {
 
 // ─── Profile ──────────────────────────────────────────────────────────────────
 
-export async function saveProfile() {
-  throw new Error('Profile editing is disabled.')
+export async function updateProfileAvatar(avatarUrl, token) {
+  const response = await apiRequest('/profiles/me', { method: 'PATCH', token, body: { avatar_url: avatarUrl } })
+  return response.profile
 }
 
 export async function getCreatorProfileById(profileId) {
