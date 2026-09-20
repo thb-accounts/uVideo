@@ -7,6 +7,7 @@ import {
   updateContentPin,
   fetchLikedVideosForUser,
   updateProfileAvatar,
+  updateProfileUsername,
 } from '../lib/contentApi'
 import { apiRequest } from '../lib/apiClient'
 import { firebaseAuth } from '../lib/firebase'
@@ -60,11 +61,14 @@ export default function ProfilePage() {
   const [activeTab, setActiveTab] = useState(0)
   const [avatarUploading, setAvatarUploading] = useState(false)
   const [avatarMessage, setAvatarMessage] = useState('')
+  const [usernameDraft, setUsernameDraft] = useState('')
+  const [usernameSaving, setUsernameSaving] = useState(false)
+  const [usernameMessage, setUsernameMessage] = useState('')
 
   useEffect(() => {
     async function load() {
       const data = await getProfile(user.id)
-      if (data) setProfile(data)
+      if (data) { setProfile(data); setUsernameDraft(data.username || '') }
       else setProfile((prev) => ({
         ...prev,
         display_name: user.user_metadata?.full_name ?? '',
@@ -170,6 +174,29 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleUsernameSave(event) {
+    event.preventDefault()
+    const next = usernameDraft.trim().toLowerCase()
+    setUsernameMessage('')
+    if (!/^[a-z0-9_]{3,30}$/.test(next)) {
+      setUsernameMessage('Use 3–30 letters, numbers, or underscores.')
+      return
+    }
+    setUsernameSaving(true)
+    try {
+      const token = await firebaseAuth.currentUser?.getIdToken(false)
+      if (!token) throw new Error('Please sign in again.')
+      const updated = await updateProfileUsername(next, token)
+      setProfile((current) => ({ ...current, ...updated }))
+      setUsernameDraft(updated?.username || next)
+      setUsernameMessage('Username updated.')
+    } catch (error) {
+      setUsernameMessage(error?.message || 'Username could not be updated.')
+    } finally {
+      setUsernameSaving(false)
+    }
+  }
+
   async function handleTogglePin(video) {
     const nextPinned = !video.is_pinned
     setVideos((current) => sortPinnedVideos(current.map((item) => (item.id === video.id ? { ...item, is_pinned: nextPinned, pinned_at: nextPinned ? new Date().toISOString() : null } : item))))
@@ -198,6 +225,11 @@ export default function ProfilePage() {
             <h1 className="truncate text-2xl font-black tracking-tight">{displayName}</h1>
           </div>
           <p className="text-lg text-white/55">@{handle}</p>
+          <form onSubmit={handleUsernameSave} className="mt-4 flex w-full max-w-xs gap-2">
+            <div className="flex min-w-0 flex-1 items-center rounded-lg border border-white/20 bg-white/5 px-3"><span className="text-white/45">@</span><input value={usernameDraft} onChange={(e)=>setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))} maxLength={30} aria-label="Username" className="min-w-0 flex-1 bg-transparent py-2 text-sm text-white outline-none"/></div>
+            <button disabled={usernameSaving || usernameDraft===profile.username} className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#202124] disabled:opacity-40">{usernameSaving?'Saving…':'Save'}</button>
+          </form>
+          {usernameMessage?<p className="mt-2 text-xs text-white/60">{usernameMessage}</p>:null}
           <div className="mt-6 grid w-full max-w-sm grid-cols-2 divide-x divide-white/10">
             <div><p className="text-3xl font-black">{videos.length}</p><p className="text-lg text-white/55">Posts</p></div>
             <div><p className="text-3xl font-black">{totalLikes}</p><p className="text-lg text-white/55">Likes</p></div>
@@ -313,6 +345,11 @@ export default function ProfilePage() {
           <div>
             <h2 className="text-xl font-bold">{displayName}</h2>
             <p className="theme-muted">@{handle}</p>
+            <form onSubmit={handleUsernameSave} className="mt-3 flex max-w-sm gap-2">
+              <div className="flex min-w-0 flex-1 items-center rounded-lg border border-[var(--app-border)] bg-white px-3"><span className="text-[#5f6368]">@</span><input value={usernameDraft} onChange={(e)=>setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))} maxLength={30} aria-label="Username" className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none"/></div>
+              <button disabled={usernameSaving || usernameDraft===profile.username} className="rounded-lg bg-[#1f6f4a] px-4 py-2 text-sm font-semibold text-white disabled:opacity-40">{usernameSaving?'Saving…':'Save'}</button>
+            </form>
+            {usernameMessage?<p className="mt-2 text-xs theme-muted">{usernameMessage}</p>:null}
             <p className="mt-2 text-sm theme-muted">{profile.bio || 'No bio yet.'}</p>
           </div>
         </div>

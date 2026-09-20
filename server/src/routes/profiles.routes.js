@@ -6,14 +6,27 @@ const router = Router()
 
 router.patch('/me', requireUploadAuth, async (req, res, next) => {
   try {
-    const avatarUrl = String(req.body?.avatar_url || '').trim()
-    if (!avatarUrl || avatarUrl.length > 2000) return res.status(400).json({ message: 'A valid avatar URL is required' })
-    let parsed
-    try { parsed = new URL(avatarUrl) } catch { return res.status(400).json({ message: 'A valid avatar URL is required' }) }
-    if (parsed.protocol !== 'https:') return res.status(400).json({ message: 'Avatar URL must use HTTPS' })
+    const avatarUrl = req.body?.avatar_url === undefined ? undefined : String(req.body.avatar_url || '').trim()
+    const username = req.body?.username === undefined ? undefined : String(req.body.username || '').trim().toLowerCase()
+    if (avatarUrl === undefined && username === undefined) return res.status(400).json({ message: 'No profile changes supplied' })
+    const updates = { updated_at: new Date().toISOString() }
+    if (avatarUrl !== undefined) {
+      if (!avatarUrl || avatarUrl.length > 2000) return res.status(400).json({ message: 'A valid avatar URL is required' })
+      let parsed
+      try { parsed = new URL(avatarUrl) } catch { return res.status(400).json({ message: 'A valid avatar URL is required' }) }
+      if (parsed.protocol !== 'https:') return res.status(400).json({ message: 'Avatar URL must use HTTPS' })
+      updates.avatar_url = avatarUrl
+    }
     const supabase = getAdminSupabase()
     if (!supabase) return res.status(503).json({ message: 'Profile service is not configured' })
-    const { data, error } = await supabase.from('profiles').update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() }).eq('id', req.uploadUser.id).select('*').single()
+    if (username !== undefined) {
+      if (!/^[a-z0-9_]{3,30}$/.test(username)) return res.status(400).json({ message: 'Username must be 3–30 characters using only letters, numbers, and underscores.' })
+      const { data: existing, error: lookupError } = await supabase.from('profiles').select('id').ilike('username', username).neq('id', req.uploadUser.id).limit(1)
+      if (lookupError) throw lookupError
+      if (existing?.length) return res.status(409).json({ message: 'That username is already taken.' })
+      updates.username = username
+    }
+    const { data, error } = await supabase.from('profiles').update(updates).eq('id', req.uploadUser.id).select('*').single()
     if (error) throw error
     return res.json({ profile: data })
   } catch (error) { return next(error) }
