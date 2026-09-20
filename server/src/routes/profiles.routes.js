@@ -27,6 +27,10 @@ router.patch('/me', requireUploadAuth, async (req, res, next) => {
       updates.username = username
     }
     const { data, error } = await supabase.from('profiles').update(updates).eq('id', req.uploadUser.id).select('*').single()
+    if (!error && username !== undefined) {
+      const { error: contentError } = await supabase.from('contents').update({ username }).eq('user_id', req.uploadUser.id)
+      if (contentError) throw contentError
+    }
     if (error) throw error
     return res.json({ profile: data })
   } catch (error) { return next(error) }
