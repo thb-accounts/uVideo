@@ -8,6 +8,7 @@ import {
   fetchContentById,
   fetchLikeStatus,
   getProfile,
+  fetchProfileAvatarsByUserIds,
   likeContent,
   unlikeContent,
 } from '../lib/contentApi'
@@ -25,8 +26,8 @@ function Player({ item }) {
   return <div className="grid h-full place-items-center bg-gradient-to-br from-[#e8f4ed] to-[#f5f7f5] text-center"><div><div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-white text-2xl text-[#126341] shadow-sm">▶</div><p className="mt-4 font-bold text-[#142019]">Preview unavailable</p></div></div>
 }
 
-function Recommendation({ item }) {
-  return <Link to={`/video/${item.id}`} className="group grid grid-cols-[168px_1fr] gap-3"><div className="aspect-video overflow-hidden rounded-xl border border-[var(--app-border)] bg-gradient-to-br from-[#e8f4ed] to-[#f5f7f5]">{item.thumbnail_url ? <img src={item.thumbnail_url} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-lg font-black text-[#126341]">▶</div>}</div><div className="min-w-0"><h3 className="line-clamp-2 text-sm font-bold leading-5 text-[var(--app-text)] group-hover:text-[var(--brand-primary)]">{item.title}</h3><p className="mt-1 truncate text-xs text-[var(--app-muted)]">@{item.username || 'mplace'}</p><p className="text-xs text-[var(--app-muted)]">{relativeDate(item.created_at)}</p></div></Link>
+function Recommendation({ item, avatarUrl='' }) {
+  return <Link to={`/video/${item.id}`} className="group grid grid-cols-[168px_1fr] gap-3"><div className="aspect-video overflow-hidden rounded-xl border border-[var(--app-border)] bg-gradient-to-br from-[#e8f4ed] to-[#f5f7f5]">{item.thumbnail_url ? <img src={item.thumbnail_url} alt="" className="h-full w-full object-cover" /> : <div className="grid h-full place-items-center text-lg font-black text-[#126341]">▶</div>}</div><div className="min-w-0"><h3 className="line-clamp-2 text-sm font-bold leading-5 text-[var(--app-text)] group-hover:text-[var(--brand-primary)]">{item.title}</h3><div className="mt-1 flex items-center gap-1.5">{avatarUrl?<img src={avatarUrl} alt="" className="h-5 w-5 rounded-full object-cover"/>:null}<p className="truncate text-xs text-[var(--app-muted)]">@{item.username || 'mplace'}</p></div><p className="text-xs text-[var(--app-muted)]">{relativeDate(item.created_at)}</p></div></Link>
 }
 
 export default function VideoPage() {
@@ -36,6 +37,7 @@ export default function VideoPage() {
   const [item, setItem] = useState(null)
   const [catalog, setCatalog] = useState([])
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [catalogAvatars, setCatalogAvatars] = useState({})
   const [liked, setLiked] = useState(false)
   const [likeCount, setLikeCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -52,6 +54,7 @@ export default function VideoPage() {
       if (cancelled) return
       setItem(content)
       setCatalog(contentData || [])
+      fetchProfileAvatarsByUserIds((contentData || []).map(video => video.user_id)).then(map => { if (!cancelled) setCatalogAvatars(map) }).catch(() => {})
       setLikeCount(content?.like_count || 0)
       if (content?.user_id) {
         const profile = await getProfile(content.user_id)
@@ -102,7 +105,7 @@ export default function VideoPage() {
         </div>
         <div className="theme-card mt-5 rounded-[18px] border p-4"><p className="text-sm font-bold">{[item.category || 'Video', relativeDate(item.created_at)].filter(Boolean).join(' · ')}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--app-muted)]">{item.description || 'A video shared on MPlace Videos.'}</p></div>
       </section>
-      <aside className="space-y-4"><h2 className="text-lg font-extrabold tracking-[-0.02em]">Up next</h2>{recommendations.map((video) => <Recommendation key={video.id} item={video} />)}{recommendations.length === 0 && <p className="text-sm text-[var(--app-muted)]">More videos are on the way.</p>}</aside>
+      <aside className="space-y-4"><h2 className="text-lg font-extrabold tracking-[-0.02em]">Up next</h2>{recommendations.map((video) => <Recommendation key={video.id} item={video} avatarUrl={catalogAvatars[video.user_id] || video.avatar_url || ''} />)}{recommendations.length === 0 && <p className="text-sm text-[var(--app-muted)]">More videos are on the way.</p>}</aside>
       {showDeleteModal && <div className="fixed inset-0 z-[70] grid place-items-center bg-[#142019]/45 p-4" onClick={() => setShowDeleteModal(false)}><div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}><h2 className="text-lg font-extrabold">Delete this video?</h2><p className="mt-2 text-sm text-[var(--app-muted)]">This action cannot be undone.</p><div className="mt-6 flex justify-end gap-3"><button onClick={() => setShowDeleteModal(false)} className="rounded-xl px-4 py-2 text-sm font-bold">Cancel</button><button onClick={handleDelete} disabled={deleting} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white">{deleting ? 'Deleting…' : 'Delete'}</button></div></div></div>}
     </div>
   )
