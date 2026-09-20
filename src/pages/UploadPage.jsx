@@ -5,269 +5,73 @@ import { uploadVideoToCloudinary } from '../lib/cloudinaryUpload'
 import { useAuth } from '../context/useAuth'
 import { Link } from 'react-router-dom'
 
-export default function UploadPage() {
-  const { user } = useAuth()
-  const formRef = useRef(null)
-  const submitLockRef = useRef(false)
-  const [status, setStatus] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-  const [selectedFileName, setSelectedFileName] = useState('')
-  const [username, setUsername] = useState(user?.user_metadata?.username || '')
-  const [verificationStatus, setVerificationStatus] = useState(null)
-  const [profileLoading, setProfileLoading] = useState(true)
-  const uploadAbortRef = useRef(null)
+const UploadIcon=()=> <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden="true"><path d="M11 16h2V8.8l2.6 2.6L17 10l-5-5-5 5 1.4 1.4L11 8.8V16Zm-6 3h14v2H5v-2Z"/></svg>
 
-  useEffect(() => {
-    let active = true
+export default function UploadPage(){
+ const {user}=useAuth(); const formRef=useRef(null); const submitLockRef=useRef(false); const uploadAbortRef=useRef(null)
+ const [status,setStatus]=useState(''); const [submitting,setSubmitting]=useState(false); const [selectedFileName,setSelectedFileName]=useState('')
+ const [username,setUsername]=useState(user?.user_metadata?.username||''); const [verificationStatus,setVerificationStatus]=useState(null); const [profileLoading,setProfileLoading]=useState(true)
 
-    if (user?.id) {
-      async function loadProfile() {
-        const profile = await getProfile(user.id)
-        if (!active) return
-        setVerificationStatus(profile?.age_verification_status || 'unverified')
-        if (profile?.username) setUsername(profile.username)
-        setProfileLoading(false)
-      }
-      loadProfile()
-    } else {
-      setProfileLoading(false)
-    }
+ useEffect(()=>{let active=true;if(user?.id){getProfile(user.id).then(profile=>{if(!active)return;setVerificationStatus(profile?.age_verification_status||'unverified');if(profile?.username)setUsername(profile.username);setProfileLoading(false)})}else setProfileLoading(false);return()=>{active=false}},[user?.id])
 
-    return () => {
-      active = false
-    }
-  }, [user?.id])
+ async function handleSubmit(event){
+  event.preventDefault(); if(submitLockRef.current)return; submitLockRef.current=true
+  const form=formRef.current||event.currentTarget; const fd=new FormData(form); let mediaUrl=String(fd.get('media_url')||'').trim()
+  const videoFile=fd.get('video_file'), captionUrl=String(fd.get('caption_url')||'').trim(), thumbnailUrl=String(fd.get('thumbnail_url')||'').trim()
+  const title=String(fd.get('title')||'').trim(), description=String(fd.get('description')||'').trim(), category=String(fd.get('category')||'General').trim(), contentType=String(fd.get('content_type')||'video').trim(), points=Number(fd.get('points'))||20
+  const hasLocalFile=videoFile&&videoFile.size>0
+  if(!hasLocalFile&&!mediaUrl){setStatus('Choose a video file or paste a direct video link.');submitLockRef.current=false;return}
+  if(!hasLocalFile&&mediaUrl&&!/^https?:\/\//i.test(mediaUrl)){setStatus('Backup links must be direct video URLs.');submitLockRef.current=false;return}
+  if(captionUrl&&!captionUrl.toLowerCase().endsWith('.vtt')){setStatus('Only .vtt caption files are supported.');submitLockRef.current=false;return}
+  setSubmitting(true);setStatus(hasLocalFile?'Preparing upload…':'Publishing video…')
+  try{
+   if(!user?.id)throw new Error('Sign in before publishing a video.')
+   if(!username)throw new Error('Set a username in Profile before publishing.')
+   let storageProvider='external',storageKey=null,cloudinaryPublicId=null
+   if(hasLocalFile){
+    const controller=new AbortController();uploadAbortRef.current=controller
+    const metadata={title,description,category,type:contentType,username,points}
+    try{
+     const bunnyResult=await uploadVideoToBunnyStream(videoFile,metadata,{signal:controller.signal,onProgress:p=>setStatus(`Uploading video: ${p}%`)})
+     form?.reset();setSelectedFileName('');setStatus(bunnyResult.status?.uploadStatus==='ready'?'Video is ready to publish.':'Video uploaded. Processing…');return
+    }catch(err){
+     if(err?.name==='AbortError'){if(err.contentId)await deleteBunnyUpload(err.contentId).catch(()=>{});throw err}
+     if(err?.bunnyAccepted)throw new Error('The upload was accepted, but processing could not be confirmed. Check your dashboard before retrying.')
+     setStatus('Primary upload failed. Switching to backup upload…')
+     const result=await uploadVideoToCloudinary(videoFile,{signal:controller.signal,onProgress:p=>setStatus(`Uploading backup: ${p}%`)})
+     mediaUrl=result.mediaUrl;storageProvider=result.provider;storageKey=result.storageKey;cloudinaryPublicId=result.cloudinaryPublicId
+    }finally{uploadAbortRef.current=null}
+   }
+   await createContent({user_id:user.id,title,description,username,type:contentType,media_url:mediaUrl,caption_url:captionUrl||null,thumbnail_url:thumbnailUrl||null,storage_provider:storageProvider,storage_key:storageKey,cloudinary_public_id:cloudinaryPublicId,bunny_video_id:null,bunny_library_id:null,upload_status:'ready',uploaded_at:new Date().toISOString(),ready_at:new Date().toISOString(),category,points,recommended:false,is_trending:false})
+   form?.reset();setSelectedFileName('');setStatus('Video published.')
+  }catch(err){setStatus(err instanceof Error?err.message:'Your video could not be published.')}finally{setSubmitting(false);submitLockRef.current=false}
+ }
 
-  async function handleSubmit(event) {
-    event.preventDefault()
+ if(profileLoading)return <div className="mx-auto max-w-3xl p-8 text-sm text-[#5f6368]">Checking creator access…</div>
+ if(verificationStatus!=='approved')return <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8"><h1 className="text-2xl font-medium text-[#202124]">Creator access required</h1><p className="mt-3 max-w-xl text-sm leading-6 text-[#5f6368]">Creators must be at least 15, or use an account managed by a parent. Contact the MPlace Videos creator team to continue.</p><Link className="mt-6 inline-flex rounded-full bg-[#1f6f4a] px-5 py-2.5 text-sm font-medium text-white" to="/verification">Get in touch</Link></div>
 
-    if (submitLockRef.current) return
-    submitLockRef.current = true
-
-    const form = formRef.current || event.currentTarget
-    const formData = new FormData(form)
-    let mediaUrl = String(formData.get('media_url') || '').trim()
-    const videoFile = formData.get('video_file')
-    const captionUrl = String(formData.get('caption_url') || '').trim()
-    const thumbnailUrl = String(formData.get('thumbnail_url') || '').trim()
-    const title = String(formData.get('title') || '').trim()
-    const description = String(formData.get('description') || '').trim()
-    const category = String(formData.get('category') || 'General').trim()
-    const contentType = String(formData.get('content_type') || 'video').trim()
-    const points = Number(formData.get('points')) || 20
-
-    const hasLocalFile = videoFile && videoFile.size > 0
-
-    if (!hasLocalFile && !mediaUrl) {
-      setStatus('Choose a video file or paste a direct video link.')
-      submitLockRef.current = false
-      return
-    }
-
-    if (!hasLocalFile && mediaUrl && !/^https?:\/\//i.test(mediaUrl)) {
-      setStatus('Backup links must be direct video URLs.')
-      submitLockRef.current = false
-      return
-    }
-
-    if (captionUrl && !captionUrl.toLowerCase().endsWith('.vtt')) {
-      setStatus('Only .vtt caption files are supported.')
-      submitLockRef.current = false
-      return
-    }
-
-    setSubmitting(true)
-    setStatus(hasLocalFile ? 'Preparing upload…' : 'Publishing video…')
-
-    try {
-      if (!user?.id) {
-        throw new Error('Sign in before publishing a video.')
-      }
-
-      if (!username) {
-        throw new Error('Set a username in Profile before publishing.')
-      }
-
-      let storageProvider = 'external'
-      let storageKey = null
-      let cloudinaryPublicId = null
-
-      if (hasLocalFile) {
-        const controller = new AbortController()
-        uploadAbortRef.current = controller
-        const metadata = { title, description, category, type: contentType, username, points }
-        try {
-          const bunnyResult = await uploadVideoToBunnyStream(videoFile, metadata, {
-            signal: controller.signal,
-            onProgress: (progress) => setStatus(`Uploading video: ${progress}%`),
-          })
-          form?.reset()
-          setSelectedFileName('')
-          setStatus(bunnyResult.status?.uploadStatus === 'ready' ? 'Video is ready to publish.' : 'Video uploaded. Processing…')
-          return
-        } catch (bunnyError) {
-          if (bunnyError?.name === 'AbortError') {
-            if (bunnyError.contentId) await deleteBunnyUpload(bunnyError.contentId).catch(() => {})
-            throw bunnyError
-          }
-          if (bunnyError?.bunnyAccepted) {
-            throw new Error('The upload was accepted, but processing could not be confirmed. Check your dashboard before retrying.')
-          }
-          console.warn('Primary upload failed before acceptance; switching to backup upload.', bunnyError)
-          setStatus('Primary upload failed. Switching to backup upload…')
-          const uploadResult = await uploadVideoToCloudinary(videoFile, {
-            signal: controller.signal,
-            onProgress: (progress) => setStatus(`Uploading backup: ${progress}%`),
-          })
-          mediaUrl = uploadResult.mediaUrl
-          storageProvider = uploadResult.provider
-          storageKey = uploadResult.storageKey
-          cloudinaryPublicId = uploadResult.cloudinaryPublicId
-          setStatus('Backup upload complete.')
-        } finally {
-          uploadAbortRef.current = null
-        }
-        setStatus('Publishing backup video…')
-      }
-
-      await createContent({
-        user_id: user.id,
-        title,
-        description,
-        username,
-        type: contentType,
-        media_url: mediaUrl,
-        caption_url: captionUrl || null,
-        thumbnail_url: thumbnailUrl || null,
-        storage_provider: storageProvider,
-        storage_key: storageKey,
-        cloudinary_public_id: cloudinaryPublicId,
-        bunny_video_id: null,
-        bunny_library_id: null,
-        upload_status: 'ready',
-        uploaded_at: new Date().toISOString(),
-        ready_at: new Date().toISOString(),
-        category,
-        points,
-        recommended: false,
-        is_trending: false,
-      })
-
-      form?.reset()
-      setSelectedFileName('')
-      setStatus('Video published!')
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Your video could not be published.'
-      console.error('Publish failed:', err)
-      setStatus(mediaUrl && hasLocalFile ? `${message} Upload completed, but publication failed; please do not re-upload unless needed.` : message)
-    } finally {
-      setSubmitting(false)
-      submitLockRef.current = false
-    }
-  }
-
-  if (profileLoading) {
-    return <div className="mx-auto max-w-3xl p-4 sm:p-8"><p className="theme-muted">Checking verification status…</p></div>
-  }
-
-  if (verificationStatus !== 'approved') {
-    return (
-      <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-8">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p>
-        <h1 className="text-3xl font-black">Contact MVideo's Creator Team to continue</h1>
-        <p className="theme-muted">Creators must be at least 15 or above, or have a parent that owns the account, that they need to manage.</p>
-        <Link className="inline-flex rounded-full bg-[#3ea6ff] px-5 py-3 font-black text-[#06131c]" to="/verification">Get in touch</Link>
-      </div>
-    )
-  }
-
-  return (
-    <div className="mx-auto max-w-4xl space-y-5 px-3 py-4 sm:p-8">
-      <section className="overflow-hidden rounded-[1.75rem] border border-white/10 bg-gradient-to-br from-[#102132] via-[#121212] to-[#07131b] p-5 shadow-2xl shadow-black/20 sm:p-8">
-        <p className="text-xs font-black uppercase tracking-[0.22em] text-[#3ea6ff]">Creator Studio</p>
-        <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
-          <div>
-            <h1 className="text-3xl font-black leading-tight sm:text-5xl">Upload to MVideo</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70 sm:text-base">Share a video, tutorial, creator story, or Clip with the MVideo community.</p>
-          </div>
-          <p className="w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1.5 text-sm font-bold text-white/80">@{username || 'set-username-in-profile'}</p>
-        </div>
-      </section>
-
-      <form ref={formRef} className="theme-card grid gap-4 rounded-[1.5rem] border p-4 shadow-xl shadow-black/10 sm:gap-5 sm:p-6" onSubmit={handleSubmit}>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="grid gap-2 text-sm font-semibold sm:col-span-2">
-            Video title
-            <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="title" placeholder="Give your video a clear title" required />
-          </label>
-          <label className="grid gap-2 text-sm font-semibold sm:col-span-2">
-            Description
-            <textarea className="theme-input min-h-28 rounded-2xl border px-4 py-3" name="description" placeholder="Tell viewers what they will see" required />
-          </label>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-3">
-          <label className="grid gap-2 text-sm font-semibold">
-            Format
-            <select className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="content_type" defaultValue="video" aria-label="Post format">
-              <option value="video">Regular video</option>
-              <option value="short">Slim / short</option>
-            </select>
-          </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Category
-            <select className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="category" defaultValue="General"><option>General</option><option>Tutorial</option><option>Coding</option><option>Shorts</option></select>
-          </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Points
-            <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="points" type="number" min="5" defaultValue="20" />
-          </label>
-        </div>
-
-        <label className="grid gap-2 text-sm font-semibold">
-          Video file
-          <input
-            accept="video/*"
-            className="theme-input min-h-12 rounded-2xl border px-4 py-3 file:mr-3 file:rounded-full file:border-0 file:bg-[#3ea6ff] file:px-4 file:py-2 file:font-black file:text-[#06131c]"
-            name="video_file"
-            type="file"
-            onChange={(event) => setSelectedFileName(event.target.files?.[0]?.name || '')}
-          />
-          <span className="text-xs font-normal theme-muted">{selectedFileName ? `Selected: ${selectedFileName}` : 'Choose a local video to upload.'}</span>
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="grid gap-2 text-sm font-semibold">
-            Thumbnail URL
-            <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="thumbnail_url" placeholder="Optional image URL" type="url" />
-          </label>
-          <label className="grid gap-2 text-sm font-semibold">
-            Direct video link
-            <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="media_url" placeholder="Direct video URL" type="url" />
-          </label>
-        </div>
-
-        <p className="text-xs theme-muted">If you select a local file and paste a direct video URL, MVideo will publish the local file and ignore the URL.</p>
-
-        <label className="grid gap-2 text-sm font-semibold">
-          Captions
-          <input className="theme-input min-h-12 rounded-2xl border px-4 py-3" name="caption_url" placeholder="Optional .vtt caption URL" type="url" />
-        </label>
-
-        <div className="sticky bottom-2 z-10 -mx-1 rounded-3xl border border-white/10 bg-black/70 p-2 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:p-0">
-          <div className="grid gap-2 sm:grid-cols-[1fr_auto]">
-            <button className="w-full rounded-full bg-[#3ea6ff] px-5 py-3.5 font-black text-[#06131c] transition hover:bg-[#70bdff] disabled:opacity-60" disabled={submitting}>
-              {submitting ? 'Publishing...' : 'Publish video'}
-            </button>
-            {submitting && (
-              <button className="rounded-full border border-white/15 px-5 py-3.5 font-black text-white transition hover:bg-white/10" type="button" onClick={() => uploadAbortRef.current?.abort()}>
-                Cancel upload
-              </button>
-            )}
-          </div>
-        </div>
-        {status && <p className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm theme-muted" role="status">{status}</p>}
-      </form>
+ const field='theme-input min-h-12 rounded-lg border px-3.5 py-2.5 text-sm'
+ return <div className="mx-auto max-w-4xl px-5 py-10 sm:px-8">
+  <div className="mb-8"><h1 className="text-2xl font-medium text-[#202124]">Create a video</h1><p className="mt-1 text-sm text-[#5f6368]">Upload and publish to MPlace Videos as @{username}.</p></div>
+  <form ref={formRef} onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-white">
+   <section className="border-b border-[var(--app-border)] p-6 sm:p-8">
+    <div className="mb-6 flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#e7f3ec] text-[#185c3d]"><UploadIcon/></div><div><h2 className="font-medium text-[#202124]">Video details</h2><p className="text-sm text-[#5f6368]">Add the information viewers will see.</p></div></div>
+    <div className="grid gap-5">
+     <label className="grid gap-2 text-sm font-medium text-[#3c4043]">Title<input className={field} name="title" placeholder="Add a title" required/></label>
+     <label className="grid gap-2 text-sm font-medium text-[#3c4043]">Description<textarea className={field+' min-h-28 resize-y'} name="description" placeholder="Tell viewers about your video" required/></label>
+     <div className="grid gap-5 sm:grid-cols-3">
+      <label className="grid gap-2 text-sm font-medium text-[#3c4043]">Format<select className={field} name="content_type" defaultValue="video"><option value="video">Regular video</option><option value="short">Blink</option></select></label>
+      <label className="grid gap-2 text-sm font-medium text-[#3c4043]">Category<select className={field} name="category" defaultValue="General"><option>General</option><option>Tutorial</option><option>Coding</option><option>Shorts</option></select></label>
+      <label className="grid gap-2 text-sm font-medium text-[#3c4043]">Points<input className={field} name="points" type="number" min="5" defaultValue="20"/></label>
+     </div>
     </div>
-  )
+   </section>
+   <section className="p-6 sm:p-8">
+    <h2 className="font-medium text-[#202124]">Media</h2><p className="mt-1 text-sm text-[#5f6368]">Choose a local file. Advanced URL fields are optional.</p>
+    <label className="mt-5 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#bdc1c6] bg-[#f8f9fa] p-5 text-center hover:bg-[#f1f3f4]"><UploadIcon/><span className="mt-2 text-sm font-medium text-[#1f6f4a]">{selectedFileName||'Choose video file'}</span><input accept="video/*" className="sr-only" name="video_file" type="file" onChange={e=>setSelectedFileName(e.target.files?.[0]?.name||'')}/></label>
+    <details className="mt-5 border-t border-[var(--app-border)] pt-5"><summary className="cursor-pointer text-sm font-medium text-[#1f6f4a]">Advanced options</summary><div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="grid gap-2 text-sm font-medium">Thumbnail URL<input className={field} name="thumbnail_url" type="url"/></label><label className="grid gap-2 text-sm font-medium">Direct video URL<input className={field} name="media_url" type="url"/></label><label className="grid gap-2 text-sm font-medium sm:col-span-2">Caption URL (.vtt)<input className={field} name="caption_url" type="url"/></label></div></details>
+   </section>
+   <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--app-border)] bg-[#f8f9fa] px-6 py-4 sm:px-8">{status?<p className="text-sm text-[#5f6368]" role="status">{status}</p>:<span/>}<div className="ml-auto flex gap-2">{submitting&&<button type="button" onClick={()=>uploadAbortRef.current?.abort()} className="rounded-full px-4 py-2 text-sm font-medium text-[#1f6f4a] hover:bg-[#e7f3ec]">Cancel</button>}<button disabled={submitting} className="rounded-full bg-[#1f6f4a] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#185c3d] disabled:opacity-60">{submitting?'Publishing…':'Publish'}</button></div></footer>
+  </form>
+ </div>
 }
