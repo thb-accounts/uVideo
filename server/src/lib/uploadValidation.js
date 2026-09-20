@@ -159,7 +159,20 @@ export async function requireUploadAuth(req, res, next) {
   if (!token) return res.status(401).json({ message: 'Authentication required' })
   try {
     const payload = await verifyFirebaseUploadToken(token)
-    req.uploadUser = { id: payload.sub, email: payload.email || null }
+    const url = cleanEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)
+    const key = cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY)
+    if (!url || !key || isPlaceholderValue(url) || isPlaceholderValue(key)) {
+      return res.status(503).json({ message: 'User profile lookup is not configured.' })
+    }
+
+    const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+    let profileQuery = supabase.from('profiles').select('id, email')
+    profileQuery = payload.email ? profileQuery.eq('email', payload.email) : profileQuery.eq('firebase_uid', payload.sub)
+    const { data: profile, error: profileError } = await profileQuery.maybeSingle()
+    if (profileError) throw profileError
+    if (!profile) return res.status(401).json({ message: 'No MPlace profile matches this Firebase account' })
+
+    req.uploadUser = { id: profile.id, email: profile.email || payload.email || null, firebaseUid: payload.sub }
     return next()
   } catch (error) {
     console.warn('Upload authentication rejected:', error?.message || 'Invalid Firebase token')
