@@ -1,9 +1,10 @@
 import { apiRequest } from './apiClient'
-import { supabase } from './supabase'
+import { firebaseAuth } from './firebase'
 
 async function getAccessToken() {
-  const { data } = await supabase.auth.getSession()
-  return data.session?.access_token
+  const user = firebaseAuth.currentUser
+  if (!user) throw new Error('Sign in before uploading a video.')
+  return user.getIdToken(false)
 }
 
 function postFormDataWithProgress({ url, formData, signal, onProgress }) {
