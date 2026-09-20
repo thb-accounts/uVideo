@@ -91,6 +91,12 @@ export function buildStorageKey({ folder, sanitizedFileName }) {
   return `${cleanFolder(folder)}/${Date.now()}-${randomUUID()}-${sanitizedFileName}`
 }
 
+async function mplaceUidToUuid(uid) {
+  const { createHash } = await import('node:crypto')
+  const hex = createHash('sha256').update(`mplace-id:${uid}`).digest('hex').slice(0, 32)
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`
+}
+
 export function getUploadAuthToken(req) {
   const authHeader = req.headers.authorization || ''
   return authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
@@ -159,20 +165,10 @@ export async function requireUploadAuth(req, res, next) {
   if (!token) return res.status(401).json({ message: 'Authentication required' })
   try {
     const payload = await verifyFirebaseUploadToken(token)
-    const url = cleanEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)
-    const key = cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY)
-    if (!url || !key || isPlaceholderValue(url) || isPlaceholderValue(key)) {
-      return res.status(503).json({ message: 'User profile lookup is not configured.' })
-    }
-
-    const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-    let profileQuery = supabase.from('profiles').select('id, email')
-    profileQuery = payload.email ? profileQuery.eq('email', payload.email) : profileQuery.eq('firebase_uid', payload.sub)
-    const { data: profile, error: profileError } = await profileQuery.maybeSingle()
-    if (profileError) throw profileError
-    if (!profile) return res.status(401).json({ message: 'No MPlace profile matches this Firebase account' })
-
-    req.uploadUser = { id: profile.id, email: profile.email || payload.email || null, firebaseUid: payload.sub }
+    // Match AuthProvider's mplaceUidToUuid() exactly so every Firebase account
+    // resolves to the same UUID used by profiles.id and contents.user_id.
+    const profileId = await mplaceUidToUuid(payload.sub)
+    req.uploadUser = { id: profileId, email: payload.email || null, firebaseUid: payload.sub }
     return next()
   } catch (error) {
     console.warn('Upload authentication rejected:', error?.message || 'Invalid Firebase token')
