@@ -1,10 +1,11 @@
 import * as tus from 'tus-js-client'
 import { apiRequest } from './apiClient'
-import { supabase } from './supabase'
+import { firebaseAuth } from './firebase'
 
 async function getAccessToken() {
-  const { data } = await supabase.auth.getSession()
-  return data.session?.access_token
+  const user = firebaseAuth.currentUser
+  if (!user) throw new Error('Sign in before uploading a video.')
+  return user.getIdToken(false)
 }
 
 export async function deleteBunnyUpload(contentId) {
