@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { fetchContent, searchPublicVideos } from '../lib/contentApi'
+import { fetchContent, fetchProfileAvatarsByUserIds, searchPublicVideos } from '../lib/contentApi'
 import { relativeDate } from '../lib/relativeDate'
 
 const categories = ['All', 'Tutorials', 'Coding', 'General']
@@ -19,11 +19,11 @@ function VideoThumbnail({item}) {
   </div>
 }
 
-function VideoCard({item}) {
+function VideoCard({item, avatarUrl=''}) {
   return <Link to={`/video/${item.id}`} className="group min-w-0">
     <VideoThumbnail item={item}/>
     <div className="mt-3 flex gap-3">
-      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e7f3ec] text-xs font-medium text-[#185c3d]">{(item.username||'M')[0].toUpperCase()}</div>
+      {avatarUrl?<img src={avatarUrl} alt="" className="h-9 w-9 shrink-0 rounded-full object-cover"/>:<div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#e7f3ec] text-xs font-medium text-[#185c3d]">{(item.username||'M')[0].toUpperCase()}</div>}
       <div className="min-w-0">
         <h3 className="line-clamp-2 text-[15px] font-medium leading-5 text-[#202124] group-hover:text-[#185c3d]">{item.title}</h3>
         <p className="mt-1 truncate text-[13px] text-[#5f6368]">{item.username?`@${item.username}`:'MPlace creator'}</p>
@@ -41,11 +41,12 @@ export default function HomePage(){
   const [videos,setVideos]=useState([])
   const [loading,setLoading]=useState(true)
   const [error,setError]=useState('')
+  const [avatars,setAvatars]=useState({})
 
   useEffect(()=>{
     let cancelled=false; setLoading(true); setError('')
     const request=requestedSearch.trim()?searchPublicVideos(requestedSearch):fetchContent({category:'all',feed:'videos'})
-    request.then(content=>{if(!cancelled)setVideos(content||[])}).catch(()=>{if(!cancelled)setError('Videos could not be refreshed. Try again in a moment.')}).finally(()=>{if(!cancelled)setLoading(false)})
+    request.then(async content=>{if(cancelled)return; const next=content||[]; setVideos(next); try { const map=await fetchProfileAvatarsByUserIds(next.map(item=>item.user_id)); if(!cancelled)setAvatars(map) } catch { if(!cancelled)setAvatars({}) }}).catch(()=>{if(!cancelled)setError('Videos could not be refreshed. Try again in a moment.')}).finally(()=>{if(!cancelled)setLoading(false)})
     return()=>{cancelled=true}
   },[requestedSearch])
 
@@ -67,7 +68,7 @@ export default function HomePage(){
         <h1 className="text-[22px] font-medium tracking-[-.01em] text-[#202124] sm:text-2xl">{requestedSearch?`Search results for “${requestedSearch}”`:requestedCategory==='All'?'Videos for you':requestedCategory}</h1>
         {!requestedSearch&&<p className="mt-1 text-sm text-[#5f6368]">Discover videos from MPlace creators.</p>}
       </div>
-      {loading?<div className="grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{Array.from({length:8}).map((_,i)=><div key={i} className="animate-pulse"><div className="aspect-video rounded-xl bg-[#e8eaed]"/><div className="mt-3 h-4 w-4/5 rounded bg-[#e8eaed]"/><div className="mt-2 h-3 w-1/2 rounded bg-[#eef0f1]"/></div>)}</div>:error?<div className="rounded-xl border border-[#f3c7c3] bg-[#fce8e6] p-4 text-sm text-[#8c1d18]">{error}</div>:filteredVideos.length?<div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{filteredVideos.map(item=><VideoCard key={item.id} item={item}/>)}</div>:<div className="flex min-h-[320px] flex-col items-center justify-center text-center"><div className="grid h-12 w-12 place-items-center rounded-full bg-[#e7f3ec] text-[#185c3d]"><PlayIcon/></div><p className="mt-4 text-base font-medium text-[#202124]">No videos found</p><p className="mt-1 max-w-sm text-sm text-[#5f6368]">Try another category or search for something else.</p><Link to="/upload" className="mt-5 rounded-full bg-[#1f6f4a] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#185c3d]">Create video</Link></div>}
+      {loading?<div className="grid grid-cols-1 gap-x-6 gap-y-9 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{Array.from({length:8}).map((_,i)=><div key={i} className="animate-pulse"><div className="aspect-video rounded-xl bg-[#e8eaed]"/><div className="mt-3 h-4 w-4/5 rounded bg-[#e8eaed]"/><div className="mt-2 h-3 w-1/2 rounded bg-[#eef0f1]"/></div>)}</div>:error?<div className="rounded-xl border border-[#f3c7c3] bg-[#fce8e6] p-4 text-sm text-[#8c1d18]">{error}</div>:filteredVideos.length?<div className="grid grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">{filteredVideos.map(item=><VideoCard key={item.id} item={item} avatarUrl={avatars[item.user_id]||item.avatar_url||''}/>)}</div>:<div className="flex min-h-[320px] flex-col items-center justify-center text-center"><div className="grid h-12 w-12 place-items-center rounded-full bg-[#e7f3ec] text-[#185c3d]"><PlayIcon/></div><p className="mt-4 text-base font-medium text-[#202124]">No videos found</p><p className="mt-1 max-w-sm text-sm text-[#5f6368]">Try another category or search for something else.</p><Link to="/upload" className="mt-5 rounded-full bg-[#1f6f4a] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#185c3d]">Create video</Link></div>}
     </section>
   </div>
 }

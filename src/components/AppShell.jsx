@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import BrandLogo from './BrandLogo'
 import { useAuth } from '../context/useAuth'
+import { getProfile } from '../lib/contentApi'
 
 const Icon = ({ name, className = 'h-5 w-5' }) => {
   const paths = {
@@ -29,8 +30,10 @@ export default function AppShell() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [query, setQuery] = useState(new URLSearchParams(location.search).get('search') || '')
+  const [avatarUrl, setAvatarUrl] = useState('')
 
   useEffect(() => { setQuery(new URLSearchParams(location.search).get('search') || '') }, [location.search])
+  useEffect(() => { let alive=true; if(!user?.id){setAvatarUrl('');return()=>{alive=false}} getProfile(user.id).then(profile=>{if(alive)setAvatarUrl(profile?.avatar_url||'')}).catch(()=>{if(alive)setAvatarUrl('')}); return()=>{alive=false} }, [user?.id, location.pathname])
 
   async function handleSignOut() { await signOut(); navigate('/') }
   function handleSearch(event) {
@@ -52,7 +55,7 @@ export default function AppShell() {
         </form>
         <div className="ml-auto flex items-center gap-1 sm:ml-0">
           <Link to="/upload" className="hidden h-10 items-center gap-2 rounded-full border border-[var(--app-border)] bg-white px-4 text-sm font-medium text-[#3c4043] hover:bg-[#f8f9fa] sm:flex"><Icon name="upload"/>Create</Link>
-          <Link to={user ? '/profile' : '/auth'} className="ml-1 grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-[#1f6f4a] text-sm font-medium text-white" title={user ? 'Your profile' : 'Sign in'}>{(user?.user_metadata?.username || user?.email || 'U')[0].toUpperCase()}</Link>
+          <Link to={user ? '/profile' : '/auth'} className="ml-1 grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-[#1f6f4a] text-sm font-medium text-white" title={user ? 'Your profile' : 'Sign in'}>{user&&avatarUrl?<img src={avatarUrl} alt="" className="h-full w-full object-cover"/>:(user?.user_metadata?.username || user?.email || 'U')[0].toUpperCase()}</Link>
         </div>
       </header>
 
