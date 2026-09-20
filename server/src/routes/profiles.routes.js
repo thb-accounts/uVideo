@@ -1,7 +1,23 @@
 import { Router } from 'express'
-import { getSupabaseForRequest } from '../lib/supabaseServer.js'
+import { getAdminSupabase, getSupabaseForRequest } from '../lib/supabaseServer.js'
+import { requireUploadAuth } from '../lib/uploadValidation.js'
 
 const router = Router()
+
+router.patch('/me', requireUploadAuth, async (req, res, next) => {
+  try {
+    const avatarUrl = String(req.body?.avatar_url || '').trim()
+    if (!avatarUrl || avatarUrl.length > 2000) return res.status(400).json({ message: 'A valid avatar URL is required' })
+    let parsed
+    try { parsed = new URL(avatarUrl) } catch { return res.status(400).json({ message: 'A valid avatar URL is required' }) }
+    if (parsed.protocol !== 'https:') return res.status(400).json({ message: 'Avatar URL must use HTTPS' })
+    const supabase = getAdminSupabase()
+    if (!supabase) return res.status(503).json({ message: 'Profile service is not configured' })
+    const { data, error } = await supabase.from('profiles').update({ avatar_url: avatarUrl, updated_at: new Date().toISOString() }).eq('id', req.uploadUser.id).select('*').single()
+    if (error) throw error
+    return res.json({ profile: data })
+  } catch (error) { return next(error) }
+})
 
 router.get('/id/:profileId', async (req, res, next) => {
   try {
