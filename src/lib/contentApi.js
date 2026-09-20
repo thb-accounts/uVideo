@@ -297,6 +297,29 @@ export async function saveProfile() {
   throw new Error('Profile editing is disabled.')
 }
 
+export async function getCreatorProfileById(profileId) {
+  const id = String(profileId || '').trim()
+  if (!id) throw new Error('Missing creator profile ID')
+  if (!hasSupabaseConfig) return { profile: null, videos: [] }
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('id, username, display_name, full_name, avatar_url, bio')
+    .eq('id', id)
+    .maybeSingle()
+  if (profileError) throw profileError
+
+  const { data: videos, error: videosError } = await supabase
+    .from('contents')
+    .select('*')
+    .eq('user_id', id)
+    .or('status.eq.published,status.is.null')
+    .order('created_at', { ascending: false })
+  if (videosError) throw videosError
+
+  return { profile: profile || { id, username: 'creator', display_name: 'Creator' }, videos: videos || [] }
+}
+
 export async function getCreatorProfile(username) {
   const handle = String(username || '').trim()
   if (!handle) throw new Error('Missing creator username')
