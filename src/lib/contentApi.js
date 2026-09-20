@@ -297,6 +297,43 @@ export async function saveProfile() {
   throw new Error('Profile editing is disabled.')
 }
 
+export async function getCreatorProfile(username) {
+  const handle = String(username || '').trim()
+  if (!handle) throw new Error('Missing creator username')
+  if (!hasSupabaseConfig) {
+    return {
+      profile: { username: handle, display_name: handle },
+      videos: fallbackContent.filter((item) => item.username === handle),
+    }
+  }
+
+  // One canonical public-profile request path. Profile metadata is optional:
+  // old content can still have a username even if its profile row is missing.
+  const [profileResult, contentResult] = await Promise.all([
+    supabase.from('profiles').select('id, username, display_name, full_name, avatar_url, bio').ilike('username', handle).maybeSingle(),
+    supabase.from('contents').select('*').ilike('username', handle).or('status.eq.published,status.is.null').order('created_at', { ascending: false }),
+  ])
+
+  if (profileResult.error) throw profileResult.error
+  if (contentResult.error) throw contentResult.error
+
+  const profile = profileResult.data
+  let videos = contentResult.data ?? []
+
+  // New uploads are keyed by the canonical MPlace profile UUID. This also
+  // recovers creators whose older contents.username value is absent/stale.
+  if (profile?.id && videos.length === 0) {
+    const byId = await supabase.from('contents').select('*').eq('user_id', profile.id).or('status.eq.published,status.is.null').order('created_at', { ascending: false })
+    if (byId.error) throw byId.error
+    videos = byId.data ?? []
+  }
+
+  return {
+    profile: profile || { username: handle, display_name: handle },
+    videos,
+  }
+}
+
 export async function getProfile(userId) {
   if (!hasSupabaseConfig || !userId) return null
   const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
