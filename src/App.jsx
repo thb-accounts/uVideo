@@ -33,6 +33,7 @@ export default function App() {
         <Route path="shorts" element={<Navigate to="/blinks" replace />} />
         <Route path="content/:id" element={<ContentViewerPage />} />
         <Route path="u/:username" element={<PublicProfilePage />} />
+        <Route path="channel/:profileId" element={<PublicProfilePage />} />
         <Route path="/video/:id" element={<VideoPage />} />
         <Route
           path="profile"

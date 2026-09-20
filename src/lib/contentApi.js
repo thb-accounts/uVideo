@@ -297,6 +297,12 @@ export async function saveProfile() {
   throw new Error('Profile editing is disabled.')
 }
 
+export async function getCreatorProfileById(profileId) {
+  const id = String(profileId || '').trim()
+  if (!id) throw new Error('Missing creator profile ID')
+  return apiRequest(`/profiles/id/${encodeURIComponent(id)}`)
+}
+
 export async function getCreatorProfile(username) {
   const handle = String(username || '').trim()
   if (!handle) throw new Error('Missing creator username')
