@@ -36,13 +36,23 @@ export default function AuthProvider({ children }) {
   async function syncProfile(account) {
     const nextUser = await normalizeUser(account)
     if (hasSupabaseConfig) {
-      await supabase.from('profiles').upsert({
-        id: nextUser.id,
-        email: nextUser.email,
-        display_name: nextUser.user_metadata.full_name || nextUser.user_metadata.username,
-        username: nextUser.user_metadata.username,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' })
+      const { data: existing } = await supabase.from('profiles').select('id, username, display_name').eq('id', nextUser.id).maybeSingle()
+      if (existing) {
+        await supabase.from('profiles').update({
+          email: nextUser.email,
+          updated_at: new Date().toISOString(),
+        }).eq('id', nextUser.id)
+        nextUser.user_metadata.username = existing.username || nextUser.user_metadata.username
+        nextUser.user_metadata.full_name = existing.display_name || nextUser.user_metadata.full_name
+      } else {
+        await supabase.from('profiles').insert({
+          id: nextUser.id,
+          email: nextUser.email,
+          display_name: nextUser.user_metadata.full_name || nextUser.user_metadata.username,
+          username: nextUser.user_metadata.username,
+          updated_at: new Date().toISOString(),
+        })
+      }
     }
     setUser(nextUser)
     return nextUser
