@@ -9,7 +9,7 @@ router.get('/id/:profileId', async (req, res, next) => {
     const supabase = getSupabaseForRequest(req)
     if (!supabase) return res.status(503).json({ message: 'Profile service is not configured' })
 
-    const { data: profile, error: profileError } = await supabase.from('profiles').select('id, username, display_name, full_name, avatar_url, bio').eq('id', profileId).maybeSingle()
+    const { data: profile, error: profileError } = await supabase.from('profiles').select('*').eq('id', profileId).maybeSingle()
     if (profileError) throw profileError
     const { data: videos, error: videosError } = await supabase.from('contents').select('*').eq('user_id', profileId).or('status.eq.published,status.is.null').order('created_at', { ascending: false })
     if (videosError) throw videosError
@@ -29,7 +29,7 @@ router.get('/:username', async (req, res, next) => {
 
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, username, display_name, full_name, avatar_url, bio')
+      .select('*')
       .ilike('username', username)
       .maybeSingle()
     if (profileError) throw profileError
