@@ -1,6 +1,6 @@
 import { Link, useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { getCreatorProfile } from '../lib/contentApi'
+import { getCreatorProfile, getCreatorProfileById } from '../lib/contentApi'
 
 function Avatar({ profile }) {
   const label = profile?.display_name || profile?.username || 'Creator'
@@ -22,21 +22,21 @@ function Posts({ videos }) {
 }
 
 export default function PublicProfilePage() {
-  const { username: routeUsername } = useParams()
+  const { username: routeUsername, profileId } = useParams()
   const username = decodeURIComponent(routeUsername || '').trim()
   const [state, setState] = useState({ loading: true, error: '', profile: null, videos: [] })
 
   useEffect(() => {
     let active = true
     setState({ loading: true, error: '', profile: null, videos: [] })
-    getCreatorProfile(username).then(data => {
+    (profileId ? getCreatorProfileById(profileId) : getCreatorProfile(username)).then(data => {
       if (active) setState({ loading: false, error: '', ...data })
     }).catch(error => {
       console.error('Creator profile load failed', error)
       if (active) setState({ loading: false, error: 'This creator profile could not be loaded.', profile: null, videos: [] })
     })
     return () => { active = false }
-  }, [username])
+  }, [username, profileId])
 
   const likes = useMemo(() => state.videos.reduce((n, v) => n + Number(v.like_count || 0), 0), [state.videos])
   if (state.loading) return <div className="mx-auto max-w-5xl p-6 text-sm text-[#66736b]">Loading creator…</div>
