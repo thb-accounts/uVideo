@@ -298,6 +298,11 @@ export async function updateProfileAvatar(avatarUrl, token) {
   return response.profile
 }
 
+export async function updateProfileUsername(username, token) {
+  const response = await apiRequest('/profiles/me', { method: 'PATCH', token, body: { username } })
+  return response.profile
+}
+
 export async function getCreatorProfileById(profileId) {
   const id = String(profileId || '').trim()
   if (!id) throw new Error('Missing creator profile ID')
