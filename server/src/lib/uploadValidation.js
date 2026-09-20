@@ -130,39 +130,58 @@ export function rateLimitUploadPermission(req, res, next) {
   return next()
 }
 
+async function verifyFirebaseUploadToken(token) {
+  const projectId = cleanEnvValue(process.env.FIREBASE_PROJECT_ID || process.env.VITE_FIREBASE_PROJECT_ID) || 'mplace-id'
+  const parts = token.split('.')
+  if (parts.length !== 3) throw new Error('Malformed Firebase token')
+  const [headerPart, payloadPart, signaturePart] = parts
+  const decode = (part) => JSON.parse(Buffer.from(part.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8'))
+  const header = decode(headerPart)
+  const payload = decode(payloadPart)
+  const now = Math.floor(Date.now() / 1000)
+  if (header.alg !== 'RS256' || !header.kid) throw new Error('Invalid Firebase token header')
+  if (payload.aud !== projectId || payload.iss !== `https://securetoken.google.com/${projectId}`) throw new Error('Invalid Firebase token project')
+  if (!payload.sub || payload.sub.length > 128 || !payload.exp || payload.exp <= now || !payload.iat || payload.iat > now) throw new Error('Expired or invalid Firebase token')
+
+  const response = await fetch('https://www.googleapis.com/robot/v1/metadata/x509/securetoken@system.gserviceaccount.com')
+  if (!response.ok) throw new Error('Could not load Firebase signing certificates')
+  const certs = await response.json()
+  const certificate = certs[header.kid]
+  if (!certificate) throw new Error('Unknown Firebase signing key')
+  const { createPublicKey, verify } = await import('node:crypto')
+  const signature = Buffer.from(signaturePart.replace(/-/g, '+').replace(/_/g, '/'), 'base64')
+  if (!verify('RSA-SHA256', Buffer.from(`${headerPart}.${payloadPart}`), createPublicKey(certificate), signature)) throw new Error('Invalid Firebase token signature')
+  return payload
+}
+
 export async function requireUploadAuth(req, res, next) {
   const token = getUploadAuthToken(req)
   if (!token) return res.status(401).json({ message: 'Authentication required' })
-
-  const url = cleanEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)
-  const key = cleanEnvValue(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY)
-  if (url && key && !isPlaceholderValue(url) && !isPlaceholderValue(key)) {
-    const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
-    const { data, error } = await supabase.auth.getUser(token)
-    if (error || !data.user) return res.status(401).json({ message: 'Authentication required' })
-    req.uploadUser = { id: data.user.id, email: data.user.email || null }
+  try {
+    const payload = await verifyFirebaseUploadToken(token)
+    req.uploadUser = { id: payload.sub, email: payload.email || null }
     return next()
+  } catch (error) {
+    console.warn('Upload authentication rejected:', error?.message || 'Invalid Firebase token')
+    return res.status(401).json({ message: 'Authentication required' })
   }
-
-  const uploadUser = getAuthenticatedUploadUser(req)
-  if (!uploadUser) return res.status(401).json({ message: 'Authentication required' })
-  req.uploadUser = uploadUser
-  return next()
 }
 
 export async function requireAgeVerified(req, res, next) {
   const url = cleanEnvValue(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL)
-  const key = cleanEnvValue(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY)
+  const key = cleanEnvValue(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY)
   if (!url || !key || isPlaceholderValue(url) || isPlaceholderValue(key)) {
     return res.status(503).json({ message: 'Age verification cannot be checked.' })
   }
-  const supabase = createClient(url, key, {
-    global: { headers: { Authorization: req.headers.authorization } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
-  const { data, error } = await supabase.from('profiles').select('age_verification_status').eq('id', req.uploadUser.id).single()
+
+  // Firebase is the identity provider. Query the profile server-side instead of
+  // passing a Firebase token to Supabase Auth/RLS as though it were a Supabase session.
+  const supabase = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } })
+  let query = supabase.from('profiles').select('age_verification_status')
+  query = req.uploadUser.email ? query.eq('email', req.uploadUser.email) : query.eq('id', req.uploadUser.id)
+  const { data, error } = await query.maybeSingle()
   if (error) return next(error)
-  if (data.age_verification_status !== 'approved') {
+  if (!data || data.age_verification_status !== 'approved') {
     return res.status(403).json({ message: 'Didit age verification (15+) is required before uploading.', code: 'AGE_VERIFICATION_REQUIRED' })
   }
   return next()
