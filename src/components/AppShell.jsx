@@ -23,7 +23,8 @@ const navItems = [
   { to: '/', label: 'Home', icon: 'home' },
   { to: '/blinks', label: 'Blinks', icon: 'blinks' },
   { to: '/offline', label: 'Offline', icon: 'offline' },
-  { to: '/upload', label: 'Create', icon: 'upload' },
+  { to: '/editor', label: 'Editor', icon: 'upload' },
+  { to: '/upload', label: 'Upload', icon: 'upload' },
 ]
 
 export default function AppShell() {
@@ -74,7 +75,7 @@ export default function AppShell() {
       <main className={`min-h-screen pb-20 pt-16 transition-[margin] duration-150 lg:pb-0 ${sidebarOpen?'lg:ml-64':'lg:ml-[72px]'}`}><Outlet/></main>
 
       <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-[var(--app-border)] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label="Mobile navigation">
-        {[{to:'/',label:'Home',icon:'home'},{to:'/blinks',label:'Blinks',icon:'blinks'},{to:'/offline',label:'Offline',icon:'offline'},{to:'/upload',label:'Create',icon:'upload'},{to:user?'/profile':'/auth',label:user?'You':'Sign in',icon:'profile'}].map(item=><NavLink key={item.label} to={item.to} end={item.to==='/' } className={({isActive})=>`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${isActive?'text-[#185c3d]':'text-[#5f6368]'}`}><Icon name={item.icon}/><span>{item.label}</span></NavLink>)}
+        {[{to:'/',label:'Home',icon:'home'},{to:'/blinks',label:'Blinks',icon:'blinks'},{to:'/offline',label:'Offline',icon:'offline'},{to:'/editor',label:'Editor',icon:'upload'},{to:user?'/profile':'/auth',label:user?'You':'Sign in',icon:'profile'}].map(item=><NavLink key={item.label} to={item.to} end={item.to==='/' } className={({isActive})=>`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${isActive?'text-[#185c3d]':'text-[#5f6368]'}`}><Icon name={item.icon}/><span>{item.label}</span></NavLink>)}
       </nav>
     </div>
   )
