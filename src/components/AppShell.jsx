@@ -13,7 +13,7 @@ const Icon = ({ name, className = 'h-5 w-5' }) => {
     profile: <path d="M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9Zm0-7a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM4 21a8 8 0 0 1 16 0h-2a6 6 0 0 0-12 0H4Z"/>,
     settings: <path d="M19.4 13a7.7 7.7 0 0 0 .1-1 7.7 7.7 0 0 0-.1-1l2-1.6-2-3.4-2.5 1a8 8 0 0 0-1.8-1L14.7 3h-4l-.4 3a8 8 0 0 0-1.8 1L6 6 4 9.4 6 11a7.7 7.7 0 0 0-.1 1 7.7 7.7 0 0 0 .1 1l-2 1.6L6 18l2.5-1a8 8 0 0 0 1.8 1l.4 3h4l.4-3a8 8 0 0 0 1.8-1l2.5 1 2-3.4-2-1.6ZM12.7 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/>,
     search: <path d="M10.5 4a6.5 6.5 0 1 0 4 11.6l4.7 4.7 1.4-1.4-4.7-4.7A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"/>,
-    back: <path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2Z"/>,
+    soundboard: <path d="M4 9h3l4-4v14l-4-4H4V9Zm10.5-.5a5 5 0 0 1 0 7l-1.4-1.4a3 3 0 0 0 0-4.2l1.4-1.4Zm2.8-2.8a9 9 0 0 1 0 12.6l-1.4-1.4a7 7 0 0 0 0-9.8l1.4-1.4Z"/>,
     offline: <path d="M6.4 4.9 5 6.3l2.2 2.2A10.4 10.4 0 0 0 3 11.8l1.8 1.8a8 8 0 0 1 4.1-3.4l2 2A5.4 5.4 0 0 0 7 15.1l2 2a2.8 2.8 0 0 1 3.6-.3L17.8 22l1.4-1.4L6.4 4.9Zm5.6.6c3.6 0 6.8 1.5 9 3.9l-1.5 1.5A10 10 0 0 0 9.9 7l-2-2c1.3-.3 2.7-.5 4.1-.5Z"/>,
   }
   return <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">{paths[name]}</svg>
@@ -67,7 +67,7 @@ export default function AppShell() {
           {navItems.map(item => <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({isActive})=>`mb-1 flex h-12 items-center rounded-full ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name={item.icon}/>{sidebarOpen&&<span className="text-sm font-medium">{item.label}</span>}</NavLink>)}
           <div className="my-3 border-t border-[#e8eaed]"/>
           <NavLink to="/settings" className={({isActive})=>`mb-1 flex h-12 items-center rounded-full ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name="settings"/>{sidebarOpen&&<span className="text-sm font-medium">Settings</span>}</NavLink>
-          <a href="https://mplace.cc" className={`flex h-12 items-center rounded-full text-[#3c4043] hover:bg-[#f1f3f4] ${sidebarOpen?'gap-5 px-4':'justify-center'}`}><Icon name="back"/>{sidebarOpen&&<span className="text-sm font-medium">MPlace</span>}</a>
+          <NavLink to="/soundboard" className={({isActive})=>`flex h-12 items-center rounded-full ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name="soundboard"/>{sidebarOpen&&<span className="text-sm font-medium">Soundboard</span>}</NavLink>
         </nav>
         {sidebarOpen&&user&&<button onClick={handleSignOut} className="mx-7 mb-6 mt-auto text-left text-sm font-medium text-[#1f6f4a]">Sign out</button>}
       </aside>
