@@ -144,25 +144,6 @@ export default function DashboardPage({ mobileOnly = false }) {
 
   return (
     <>
-      {!usageSettings.onboarded && <div className="hidden lg:block"><UsageOnboarding onSave={handleSaveOnboarding} /></div>}
-      {modalType && (
-        <div>
-        <MindfulModal
-          type={modalType}
-          settings={{ ...usageSettings, dailyLimitMinutes: effectiveDailyLimit }}
-          usage={usageState}
-          onClose={modalType === 'guest-limit' ? undefined : () => setModalType('')}
-          onTakeBreak={handleTakeBreak}
-          onContinue={handleContinue}
-          isGuestLocked={modalType === 'guest-limit'}
-          onApplyCode={handleApplyCode}
-        />
-        </div>
-      )}
-
-      {!mobileOnly && <div className="pointer-events-none fixed left-3 top-3 z-30 hidden rounded-full bg-black/50 px-3 py-1 text-xs text-white backdrop-blur lg:block">
-        {Math.round(usageState.minutesUsed)}m / {effectiveDailyLimit + (isGuest ? 0 : usageState.extraMinutes)}m
-      </div>}
       {!mobileOnly && <button
         onClick={() => cycleMode(1)}
         className="fixed left-1/2 top-3 z-30 hidden -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur lg:block"
