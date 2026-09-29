@@ -1,3 +1,9 @@
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { fetchContent, fetchProfileAvatarsByUserIds } from '../lib/contentApi'
+import FeedItem from '../components/FeedItem'
+import { prefetchBlinks } from '../lib/offlineStore'
+
 const feedModes = ['for-you', 'explore']
 
 export default function DashboardPage({ mobileOnly = false }) {
@@ -8,6 +14,9 @@ export default function DashboardPage({ mobileOnly = false }) {
   const [loading, setLoading] = useState(true)
   const [activeIndex, setActiveIndex] = useState(0)
   const [loadError, setLoadError] = useState('')
+  const [touchStart, setTouchStart] = useState(null)
+  const containerRef = useRef(null)
+  const tab = mobileOnly ? 'for-you' : new URLSearchParams(location.search).get('tab') || 'for-you'
   useEffect(() => {
     let cancelled = false
 
