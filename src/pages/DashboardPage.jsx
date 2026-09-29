@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { fetchContent, fetchProfileAvatarsByUserIds } from '../lib/contentApi'
 import FeedItem from '../components/FeedItem'
+import { useAuth } from '../context/useAuth'
 import { prefetchBlinks } from '../lib/offlineStore'
 
 const feedModes = ['for-you', 'explore']
