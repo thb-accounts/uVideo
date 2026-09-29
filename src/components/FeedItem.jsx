@@ -8,8 +8,7 @@ import {
   fetchLikeCount,
   deleteContent,
 } from '../lib/contentApi'
-import { readUiSettings } from '../lib/uiSettings'
-import { parseVTT, formatBionic } from '../lib/captionUtils'
+import { parseVTT } from '../lib/captionUtils'
 import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
 
 // ─── Video / Embed Player ─────────────────────────────────────────────────────
@@ -50,11 +49,11 @@ function getMediaUrl(item = {}) {
   return item.media_url || item.mediaUrl || item.video_url || item.videoUrl || item.url || ''
 }
 
-function FeedPlayer({ item, isActive, isPaused, settings }) {
+function FeedPlayer({ item, isActive, isPaused }) {
   const videoRef = useRef(null)
   const [cues, setCues] = useState([])
   const [currentCaption, setCurrentCaption] = useState('')
-  const [isMuted, setIsMuted] = useState(settings.mutedByDefault)
+  const [isMuted, setIsMuted] = useState(false)
   const mediaUrl = getMediaUrl(item)
   const captionUrl = item?.captionUrl || item?.caption_url
 
@@ -89,7 +88,7 @@ function FeedPlayer({ item, isActive, isPaused, settings }) {
     const time = videoRef.current.currentTime
     const activeCue = cues.find(c => time >= c.start && time <= c.end)
     if (activeCue) {
-      const formatted = settings.bionicReading ? formatBionic(activeCue.text) : activeCue.text
+      const formatted = activeCue.text
       if (formatted !== currentCaption) {
         setCurrentCaption(formatted)
       }
@@ -269,7 +268,6 @@ export default function FeedItem({ item, isActive, onDeleted, forcePaused = fals
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
-  const [settings] = useState(readUiSettings())
 
   const isOwner = user && item?.user_id && user.id === item.user_id
 
@@ -347,7 +345,6 @@ export default function FeedItem({ item, isActive, onDeleted, forcePaused = fals
               item={item}
               isActive={isActive}
               isPaused={isPaused || forcePaused}
-              settings={settings}
             />
           </div>
           {(isPaused || forcePaused) && (
