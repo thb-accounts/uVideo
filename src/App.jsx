@@ -14,6 +14,7 @@ import UploadPage from './pages/UploadPage'
 import VideoPage from './pages/VideoPage'
 import ModeratorDashboardPage from './pages/ModeratorDashboardPage'
 import OfflinePage from './pages/OfflinePage'
+import EditorPage from './pages/EditorPage'
 import VerificationPage from './pages/VerificationPage'
 
 export default function App() {
@@ -32,6 +33,7 @@ export default function App() {
         <Route path="dashboard" element={<Navigate to="/" replace />} />
         <Route path="blinks" element={<DashboardPage />} />
         <Route path="offline" element={<OfflinePage />} />
+        <Route path="editor" element={<EditorPage />} />
         <Route path="shorts" element={<Navigate to="/blinks" replace />} />
         <Route path="content/:id" element={<ContentViewerPage />} />
         <Route path="u/:username" element={<PublicProfilePage />} />
