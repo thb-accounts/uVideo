@@ -6,6 +6,7 @@ import {
   fetchProfileAvatarsByUserIds,
 } from '../lib/contentApi'
 import FeedItem from '../components/FeedItem'
+import { prefetchBlinks } from '../lib/offlineStore'
 import {
   acknowledge80,
   acknowledgeLimit,
@@ -209,6 +210,11 @@ export default function DashboardPage({ mobileOnly = false, forceLimitStart = fa
       cancelled = true
     }
   }, [tab])
+
+  useEffect(() => {
+    if (!navigator.onLine || feed.length === 0) return
+    prefetchBlinks(feed.slice(activeIndex, activeIndex + 12))
+  }, [activeIndex, feed])
 
   useEffect(() => {
     if (!containerRef.current || feed.length === 0) return

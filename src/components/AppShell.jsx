@@ -14,6 +14,7 @@ const Icon = ({ name, className = 'h-5 w-5' }) => {
     settings: <path d="M19.4 13a7.7 7.7 0 0 0 .1-1 7.7 7.7 0 0 0-.1-1l2-1.6-2-3.4-2.5 1a8 8 0 0 0-1.8-1L14.7 3h-4l-.4 3a8 8 0 0 0-1.8 1L6 6 4 9.4 6 11a7.7 7.7 0 0 0-.1 1 7.7 7.7 0 0 0 .1 1l-2 1.6L6 18l2.5-1a8 8 0 0 0 1.8 1l.4 3h4l.4-3a8 8 0 0 0 1.8-1l2.5 1 2-3.4-2-1.6ZM12.7 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z"/>,
     search: <path d="M10.5 4a6.5 6.5 0 1 0 4 11.6l4.7 4.7 1.4-1.4-4.7-4.7A6.5 6.5 0 0 0 10.5 4Zm0 2a4.5 4.5 0 1 1 0 9 4.5 4.5 0 0 1 0-9Z"/>,
     back: <path d="M20 11H7.8l5.6-5.6L12 4l-8 8 8 8 1.4-1.4L7.8 13H20v-2Z"/>,
+    offline: <path d="M6.4 4.9 5 6.3l2.2 2.2A10.4 10.4 0 0 0 3 11.8l1.8 1.8a8 8 0 0 1 4.1-3.4l2 2A5.4 5.4 0 0 0 7 15.1l2 2a2.8 2.8 0 0 1 3.6-.3L17.8 22l1.4-1.4L6.4 4.9Zm5.6.6c3.6 0 6.8 1.5 9 3.9l-1.5 1.5A10 10 0 0 0 9.9 7l-2-2c1.3-.3 2.7-.5 4.1-.5Z"/>,
   }
   return <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">{paths[name]}</svg>
 }
@@ -21,7 +22,9 @@ const Icon = ({ name, className = 'h-5 w-5' }) => {
 const navItems = [
   { to: '/', label: 'Home', icon: 'home' },
   { to: '/blinks', label: 'Blinks', icon: 'blinks' },
-  { to: '/upload', label: 'Create', icon: 'upload' },
+  { to: '/offline', label: 'Offline', icon: 'offline' },
+  { to: '/editor', label: 'Editor', icon: 'upload' },
+  { to: '/upload', label: 'Upload', icon: 'upload' },
 ]
 
 export default function AppShell() {
@@ -71,8 +74,8 @@ export default function AppShell() {
 
       <main className={`min-h-screen pb-20 pt-16 transition-[margin] duration-150 lg:pb-0 ${sidebarOpen?'lg:ml-64':'lg:ml-[72px]'}`}><Outlet/></main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-4 border-t border-[var(--app-border)] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label="Mobile navigation">
-        {[{to:'/',label:'Home',icon:'home'},{to:'/blinks',label:'Blinks',icon:'blinks'},{to:'/upload',label:'Create',icon:'upload'},{to:user?'/profile':'/auth',label:user?'You':'Sign in',icon:'profile'}].map(item=><NavLink key={item.label} to={item.to} end={item.to==='/' } className={({isActive})=>`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${isActive?'text-[#185c3d]':'text-[#5f6368]'}`}><Icon name={item.icon}/><span>{item.label}</span></NavLink>)}
+      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-[var(--app-border)] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label="Mobile navigation">
+        {[{to:'/',label:'Home',icon:'home'},{to:'/blinks',label:'Blinks',icon:'blinks'},{to:'/offline',label:'Offline',icon:'offline'},{to:'/editor',label:'Editor',icon:'upload'},{to:user?'/profile':'/auth',label:user?'You':'Sign in',icon:'profile'}].map(item=><NavLink key={item.label} to={item.to} end={item.to==='/' } className={({isActive})=>`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${isActive?'text-[#185c3d]':'text-[#5f6368]'}`}><Icon name={item.icon}/><span>{item.label}</span></NavLink>)}
       </nav>
     </div>
   )

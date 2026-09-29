@@ -1,6 +1,49 @@
 import { Link, useParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { getCreatorProfile, getCreatorProfileById } from '../lib/contentApi'
+import { getCreatorProfile, getCreatorProfileById, isShortContent } from '../lib/contentApi'
+
+function ContentThumbnail({ item, portrait = false }) {
+  const mediaUrl = item.thumbnail_url || item.media_url || ''
+  const isVideo = !item.thumbnail_url && Boolean(item.media_url)
+
+  return (
+    <div className={`${portrait ? 'aspect-[9/16]' : 'aspect-video'} overflow-hidden bg-[#eef2ef]`}>
+      {mediaUrl ? (
+        isVideo
+          ? <video src={mediaUrl} className="h-full w-full object-cover" muted playsInline preload="metadata" />
+          : <img src={mediaUrl} alt="" className="h-full w-full object-cover" loading="lazy" />
+      ) : (
+        <div className="grid h-full place-items-center px-4 text-center text-sm text-[#66736b]">
+          {item.title || (portrait ? 'Untitled Blink' : 'Untitled video')}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ContentSection({ title, items, portrait = false }) {
+  if (items.length === 0) return null
+
+  return (
+    <section className="mt-8">
+      <h2 className="mb-4 text-xl font-semibold text-[#202124]">{title}</h2>
+      <div className={portrait
+        ? 'grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'
+        : 'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3'}>
+        {items.map((item) => (
+          <Link key={item.id} to={`/video/${item.id}`} className="group overflow-hidden rounded-xl border bg-white">
+            <ContentThumbnail item={item} portrait={portrait} />
+            <div className="p-3">
+              <p className="line-clamp-2 font-semibold text-[#202124] group-hover:text-[#185c3d]">
+                {item.title || (portrait ? 'Untitled Blink' : 'Untitled video')}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
 
 export default function PublicProfilePage() {
   const { username: routeUsername = '', profileId = '' } = useParams()
@@ -32,6 +75,8 @@ export default function PublicProfilePage() {
   const name = profile.display_name || profile.username || 'Creator'
   const handle = profile.username || 'creator'
   const totalLikes = data.videos.reduce((sum, video) => sum + Number(video?.like_count || 0), 0)
+  const blinks = data.videos.filter(isShortContent)
+  const videos = data.videos.filter((video) => !isShortContent(video))
 
   return (
     <main className="mx-auto max-w-5xl p-4 md:p-6">
@@ -52,22 +97,14 @@ export default function PublicProfilePage() {
         </div>
       </section>
 
-      <section className="mt-5">
-        {data.videos.length === 0 ? <div className="py-12 text-center text-sm text-[#66736b]">No posts yet</div> : (
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
-            {data.videos.map((video) => (
-              <Link key={video.id} to={`/video/${video.id}`} className="overflow-hidden rounded-xl border bg-white">
-                <div className="aspect-video bg-[#eef2ef]">
-                  {video.thumbnail_url ? <img src={video.thumbnail_url} alt="" className="h-full w-full object-cover" /> : null}
-                </div>
-                <div className="p-3">
-                  <p className="line-clamp-2 font-semibold">{video.title || 'Untitled video'}</p>
-                </div>
-              </Link>
-            ))}
-          </div>
+      {data.videos.length === 0
+        ? <div className="py-12 text-center text-sm text-[#66736b]">No posts yet</div>
+        : (
+          <>
+            <ContentSection title="Videos" items={videos} />
+            <ContentSection title="Blinks" items={blinks} portrait />
+          </>
         )}
-      </section>
     </main>
   )
 }
