@@ -2,13 +2,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
 import { fetchContent, fetchProfileAvatarsByUserIds } from '../lib/contentApi'
 import FeedItem from '../components/FeedItem'
-import { useAuth } from '../context/useAuth'
-import { prefetchBlinks } from '../lib/offlineStore'
+import { getOfflineItems, prefetchBlinks } from '../lib/offlineStore'
+import { isShortContent } from '../lib/contentApi'
+import { useOnline } from '../lib/useOnline'
 
 const feedModes = ['for-you', 'explore']
 
 export default function DashboardPage({ mobileOnly = false }) {
-  const { user } = useAuth()
+  const online = useOnline()
   const location = useLocation()
   const navigate = useNavigate()
   const [feed, setFeed] = useState([])
@@ -38,14 +39,21 @@ export default function DashboardPage({ mobileOnly = false }) {
     async function load() {
       setLoading(true)
       setLoadError('')
+      if (!online) {
+        setFeed(getOfflineItems().filter(isShortContent))
+        setActiveIndex(0)
+        setLoading(false)
+        return
+      }
       try {
         await hydrateFeed()
         if (!cancelled) setActiveIndex(0)
       } catch (error) {
         console.error('Dashboard load failed:', error)
         if (!cancelled) {
-          setFeed([])
-          setLoadError('Unable to load right now. Pull to refresh or try again in a moment.')
+          const saved = getOfflineItems().filter(isShortContent)
+          setFeed(saved)
+          setLoadError(saved.length ? '' : 'No downloaded Blinks are available yet. Open Blinks while online to prepare some.')
         }
       } finally {
         if (!cancelled) setLoading(false)
@@ -56,12 +64,12 @@ export default function DashboardPage({ mobileOnly = false }) {
     return () => {
       cancelled = true
     }
-  }, [tab])
+  }, [tab, online])
 
   useEffect(() => {
-    if (!navigator.onLine || feed.length === 0) return
+    if (!online || feed.length === 0) return
     prefetchBlinks(feed.slice(activeIndex, activeIndex + 12))
-  }, [activeIndex, feed])
+  }, [activeIndex, feed, online])
 
   useEffect(() => {
     if (!containerRef.current || feed.length === 0) return
@@ -81,8 +89,8 @@ export default function DashboardPage({ mobileOnly = false }) {
   useEffect(() => {
     const activeItem = feed[activeIndex]
     if (!activeItem) return
-    if (!mobileOnly) window.history.replaceState(null, '', `/video/${activeItem.id}`)
-  }, [activeIndex, feed, mobileOnly])
+    if (!mobileOnly && online) window.history.replaceState(null, '', `/video/${activeItem.id}`)
+  }, [activeIndex, feed, mobileOnly, online])
 
   function handleDeleted(id) {
     setFeed((prev) => prev.filter((item) => item.id !== id))
@@ -137,7 +145,7 @@ export default function DashboardPage({ mobileOnly = false }) {
         <div className="text-4xl">📭</div>
         {loadError && <p className="max-w-xs rounded-xl brand-error p-3 text-center text-sm">{loadError}</p>}
         <p className="max-w-xs text-center text-xl font-semibold">
-          {tab === 'explore' ? 'No explore posts yet from @MVideoexplore' : 'No content yet'}
+          {!online ? 'No Blinks saved yet. Browse Blinks while online first.' : tab === 'explore' ? 'No explore posts yet from @MVideoexplore' : 'No content yet'}
         </p>
         {tab === 'explore' ? (
           <Link to="/blinks" className="rounded-full brand-button px-6 py-2 font-semibold">
@@ -154,6 +162,7 @@ export default function DashboardPage({ mobileOnly = false }) {
 
   return (
     <>
+      {!online && <div className="fixed right-4 top-20 z-40 rounded-full bg-black/80 px-3 py-1 text-xs text-white">Offline · saved Blinks</div>}
       {!mobileOnly && <button
         onClick={() => cycleMode(1)}
         className="fixed left-1/2 top-3 z-30 hidden -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur lg:block"

@@ -10,6 +10,7 @@ import {
 } from '../lib/contentApi'
 import { parseVTT } from '../lib/captionUtils'
 import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
+import OfflineVideo from './OfflineVideo'
 
 // ─── Video / Embed Player ─────────────────────────────────────────────────────
 
@@ -100,6 +101,8 @@ function FeedPlayer({ item, isActive, isPaused }) {
   if (!item) return null
 
   const youtubeDetails = getYouTubeEmbedDetails(mediaUrl)
+
+  if (item.offline_media) return <OfflineVideo src={mediaUrl} active={isActive && !isPaused} className="h-full w-full object-cover" />
 
   if (isBunnyStreamContent(item)) {
     const src = bunnyEmbedUrl(item, {
