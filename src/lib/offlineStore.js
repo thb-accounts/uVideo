@@ -3,7 +3,12 @@ const LIMIT = 16
 const pending = new Set()
 function readItems() { try { return JSON.parse(localStorage.getItem(META_KEY) || '[]') } catch { return [] } }
 function writeItems(items) { localStorage.setItem(META_KEY, JSON.stringify(items)); window.dispatchEvent(new Event('mplace-offline-changed')) }
-export function getOfflineItems() { return readItems() }
+export function offlinePlaybackUrl(item) {
+  return `/__mplace_offline_media__/${encodeURIComponent(item.id)}?url=${encodeURIComponent(item.media_url)}`
+}
+export function getOfflineItems() {
+  return readItems().map(item => ({ ...item, media_url: offlinePlaybackUrl(item) }))
+}
 export function forgetOfflineItem(id) {
   writeItems(readItems().filter(item => item.id !== id))
   navigator.serviceWorker?.controller?.postMessage({ type: 'OFFLINE_REMOVE', id })
