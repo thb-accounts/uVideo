@@ -16,7 +16,7 @@ function setup(fetcher) {
     async delete(name) { return storage.delete(name) },
   }
   const handlers = {}
-  const self = { addEventListener(type, fn) { handlers[type] = fn }, clients: { claim() {} }, skipWaiting() {} }
+  const self = { location: { origin: 'https://app.test' }, addEventListener(type, fn) { handlers[type] = fn }, clients: { claim() {} }, skipWaiting() {} }
   const context = vm.createContext({ self, caches, fetch: fetcher, Response, Request, Headers, URL, TextDecoder, console })
   vm.runInContext(source, context)
   return { context, handlers, storage }
@@ -26,7 +26,7 @@ test('downloads a full file and answers video range requests from cache', async 
   const url = 'https://media.test/video.mp4'
   assert.equal(await vm.runInContext(`saveVideo({ id: 'abc', url: '${url}' })`, env.context), url)
   let response
-  env.handlers.fetch({ request: new Request(url, { headers: { Range: 'bytes=2-5' } }), respondWith(value) { response = value } })
+  env.handlers.fetch({ request: new Request(`https://app.test/__mplace_offline_media__/abc?url=${encodeURIComponent(url)}`, { headers: { Range: 'bytes=2-5' } }), respondWith(value) { response = value } })
   response = await response
   assert.equal(response.status, 206)
   assert.equal(response.headers.get('content-range'), 'bytes 2-5/10')
@@ -43,4 +43,23 @@ test('downloads one complete HLS rendition and its segments', async () => {
   const result = await vm.runInContext("saveVideo({ id: 'abc', url: 'https://media.test/master.m3u8' })", env.context)
   assert.equal(result, 'https://media.test/video.m3u8')
   assert.ok(env.storage.get('mplace-media-v2-abc').has('https://media.test/segment.ts'))
+})
+
+test('rewrites HLS playlist and segments to same-origin offline URLs', async () => {
+  const env = setup(async url => new Response(url.endsWith('playlist.m3u8') ? '#EXTM3U\n#EXTINF:1,\nsegment.ts\n#EXT-X-ENDLIST\n' : 'segment'))
+  await vm.runInContext("saveVideo({ id: 'abc', url: 'https://media.test/playlist.m3u8' })", env.context)
+  let response
+  const url = 'https://app.test/__mplace_offline_media__/abc?url=' + encodeURIComponent('https://media.test/playlist.m3u8')
+  env.handlers.fetch({ request: new Request(url), respondWith(value) { response = value } })
+  const playlist = await (await response).text()
+  assert.match(playlist, /\/__mplace_offline_media__\/abc\?url=/)
+  assert.match(playlist, /segment.ts/)
+})
+test('offline URLs never fetch the network if the cached file is missing', async () => {
+  let calls = 0
+  const env = setup(async () => { calls++; throw new Error('unexpected network request') })
+  let response
+  env.handlers.fetch({ request: new Request('https://app.test/__mplace_offline_media__/missing?url=https%3A%2F%2Fmedia.test%2Fv.mp4'), respondWith(value) { response = value } })
+  assert.equal((await response).status, 404)
+  assert.equal(calls, 0)
 })

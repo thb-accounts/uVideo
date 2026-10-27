@@ -1,4 +1,4 @@
-const SHELL = 'mplace-shell-v3'
+const SHELL = 'mplace-shell-v4'
 const MEDIA_PREFIX = 'mplace-media-v2-'
 const MAX_BYTES = 60 * 1024 * 1024
 
@@ -27,7 +27,7 @@ async function saveVideo(item) {
   let total = 0
   async function save(url, text = false) {
     const response = await fetch(url, { mode: 'cors', credentials: 'omit' })
-    if (!response.ok || response.type === 'opaque') throw new Error('Video host does not permit offline access')
+    if (response.status !== 200 || response.type === 'opaque') throw new Error('Video host does not permit offline access')
     const mime = response.headers.get('content-type') || ''
     if (/text\/html/i.test(mime)) throw new Error('Video URL returned a web page')
     const bytes = await response.clone().arrayBuffer()
@@ -78,28 +78,55 @@ self.addEventListener('message', event => {
   }
   if (type === 'OFFLINE_REMOVE' && id) event.waitUntil(caches.delete(MEDIA_PREFIX + encodeURIComponent(id)))
 })
+// Same-origin playback avoids returning a cross-origin CORS response to the
+// browser's no-CORS video request. Only previously cached bytes are served.
+const OFFLINE_PATH = '/__mplace_offline_media__/'
+function offlineUrl(id, url) {
+  return `${OFFLINE_PATH}${encodeURIComponent(id)}?url=${encodeURIComponent(url)}`
+}
+async function offlineResponse(request, parsed) {
+  const id = decodeURIComponent(parsed.pathname.slice(OFFLINE_PATH.length))
+  const original = parsed.searchParams.get('url')
+  if (!id || !original) return new Response('Offline video unavailable', { status: 404 })
+  const cache = await caches.open(MEDIA_PREFIX + encodeURIComponent(id))
+  const cached = await cache.match(original)
+  if (!cached) return new Response('Offline video unavailable', { status: 404 })
+  const headers = new Headers(cached.headers)
+  headers.delete('content-encoding')
+  const range = request.headers.get('range')
+  if (/\.m3u8(?:\?|$)/i.test(original) && !range) {
+    const playlist = await cached.text()
+    const rewritten = playlist.split(/\r?\n/).map(line => {
+      if (line.startsWith('#')) return line.replace(/URI="([^"]+)"/g, (_, uri) => `URI="${offlineUrl(id, new URL(uri, original).href)}"`)
+      return line.trim() ? offlineUrl(id, new URL(line.trim(), original).href) : line
+    }).join('\n')
+    headers.delete('content-length')
+    headers.set('content-type', 'application/vnd.apple.mpegurl')
+    return new Response(rewritten, { status: 200, headers })
+  }
+  const bytes = await cached.arrayBuffer()
+  if (!range) {
+    headers.set('content-length', String(bytes.byteLength))
+    return new Response(bytes, { status: 200, headers })
+  }
+  const match = /^bytes=(\d+)-(\d*)$/.exec(range)
+  if (!match) return new Response(null, { status: 416 })
+  const start = Number(match[1]), end = match[2] ? Math.min(Number(match[2]), bytes.byteLength - 1) : bytes.byteLength - 1
+  if (start > end || start >= bytes.byteLength) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${bytes.byteLength}` } })
+  headers.set('Content-Range', `bytes ${start}-${end}/${bytes.byteLength}`)
+  headers.set('Content-Length', String(end - start + 1)); headers.set('Accept-Ranges', 'bytes')
+  return new Response(bytes.slice(start, end + 1), { status: 206, headers })
+}
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return
+  const url = new URL(event.request.url)
+  if (url.origin === self.location.origin && url.pathname.startsWith(OFFLINE_PATH)) {
+    event.respondWith(offlineResponse(event.request, url))
+    return
+  }
   if (event.request.mode === 'navigate') {
     event.respondWith(fetch(event.request).catch(async () => (await caches.open(SHELL)).match('/index.html')))
     return
   }
-  event.respondWith((async () => {
-    const url = event.request.url
-    const names = (await caches.keys()).filter(key => key.startsWith(MEDIA_PREFIX) && !key.endsWith('-pending'))
-    let cached
-    for (const name of names) { cached = await (await caches.open(name)).match(url); if (cached) break }
-    cached ||= await (await caches.open(SHELL)).match(event.request)
-    if (!cached) return fetch(event.request)
-    const range = event.request.headers.get('range')
-    if (!range) return cached
-    const bytes = await cached.arrayBuffer()
-    const match = /^bytes=(\d+)-(\d*)$/.exec(range)
-    if (!match) return new Response(null, { status: 416 })
-    const start = Number(match[1]), end = match[2] ? Math.min(Number(match[2]), bytes.byteLength - 1) : bytes.byteLength - 1
-    if (start > end || start >= bytes.byteLength) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${bytes.byteLength}` } })
-    const headers = new Headers(cached.headers)
-    headers.set('Content-Range', `bytes ${start}-${end}/${bytes.byteLength}`); headers.set('Content-Length', String(end - start + 1)); headers.set('Accept-Ranges', 'bytes')
-    return new Response(bytes.slice(start, end + 1), { status: 206, headers })
-  })())
+  event.respondWith((async () => (await (await caches.open(SHELL)).match(event.request)) || fetch(event.request))())
 })
