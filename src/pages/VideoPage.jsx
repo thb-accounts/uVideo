@@ -13,6 +13,7 @@ import {
   unlikeContent,
 } from '../lib/contentApi'
 import { relativeDate } from '../lib/relativeDate'
+import PrerollPlayer from '../components/PrerollPlayer'
 
 function embedUrl(url = '') {
   return url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
@@ -90,7 +91,7 @@ export default function VideoPage() {
   return (
     <div className="mx-auto grid max-w-[1600px] gap-8 px-4 py-6 sm:px-6 xl:grid-cols-[minmax(0,1fr)_390px]">
       <section className="min-w-0">
-        <div className="aspect-video overflow-hidden rounded-[18px] bg-black shadow-sm"><Player item={item} /></div>
+        <div className="aspect-video overflow-hidden rounded-[18px] bg-black shadow-sm"><PrerollPlayer key={id}><Player item={item} /></PrerollPlayer></div>
         <h1 className="mt-4 text-xl font-extrabold leading-tight tracking-[-0.02em] sm:text-2xl">{item.title}</h1>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--app-border)] pb-5">
           <Link to={item.user_id ? `/channel/${item.user_id}` : item.username ? `/u/${encodeURIComponent(item.username)}` : '#'} className="flex min-w-0 items-center gap-3">
