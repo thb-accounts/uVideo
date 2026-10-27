@@ -108,3 +108,9 @@ Example response:
 Android should call this endpoint with a normal HTTPS GET request, parse the `videos` array, and pass each `hlsUrl` to the player. If `nextCursor` is not `null`, request the next page by sending it back as the `cursor` query parameter. Native Android networking does not require browser CORS headers.
 
 If the endpoint returns an empty list, confirm that at least one uploaded content row is published and playable. Bunny Stream rows must have `status = 'published'`, `upload_status = 'ready'`, a Bunny `playlist.m3u8` `media_url`, and either `thumbnail_url` or `bunny_video_id` so the API can return a public Bunny thumbnail. Cloudinary fallback rows must have `status = 'published'`, a Cloudinary HTTPS `media_url`, and must not have `upload_status` set to `uploading`, `processing`, or `failed`; if `thumbnail_url` is missing, the API derives a safe Cloudinary poster URL from the playback URL. Direct external links and YouTube embeds are not included in this Android playback API.
+
+### Manual video ads
+
+The `/ads-admin` page lets designated administrators add a direct HTTPS MP4 URL, an optional HTTPS destination, skip timing, and enable or pause each ad. Upload the MP4 to a host that serves direct browser-playable video; Bunny player/embed URLs are not MP4 URLs. Ads run only on the full-video page, not the short-form feed. With no enabled ad, or if ads fail to load, the video is available normally.
+
+Before use, run `supabase/004_video_ads.sql` in the Supabase SQL editor and configure the server-only `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, and `AD_ADMIN_FIREBASE_UIDS` (comma-separated Firebase UIDs). Sign in with one of those Firebase accounts and visit `/ads-admin`. Never put the service key in a `VITE_` variable. Ad events are approximate client-reported counts, can be forged, and the admin list currently counts at most 10,000 event rows; they are not suitable for billing. No ads are created by default.

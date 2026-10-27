@@ -17,6 +17,7 @@ import OfflinePage from './pages/OfflinePage'
 import EditorPage from './pages/EditorPage'
 import SoundboardPage from './pages/SoundboardPage'
 import VerificationPage from './pages/VerificationPage'
+import AdsAdminPage from './pages/AdsAdminPage'
 
 export default function App() {
   useEffect(() => {
@@ -33,6 +34,7 @@ export default function App() {
         <Route index element={<HomePage />} />
         <Route path="dashboard" element={<Navigate to="/" replace />} />
         <Route path="blinks" element={<DashboardPage />} />
+        <Route path="ads-admin" element={<RequireAuth><AdsAdminPage /></RequireAuth>} />
         <Route path="offline" element={<OfflinePage />} />
         <Route path="editor" element={<EditorPage />} />
         <Route path="soundboard" element={<SoundboardPage />} />
