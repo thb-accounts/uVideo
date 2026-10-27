@@ -5,6 +5,7 @@ import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
 import {
   deleteContent,
   fetchContent,
+  isShortContent,
   fetchContentById,
   fetchLikeStatus,
   getProfile,
@@ -14,6 +15,9 @@ import {
 } from '../lib/contentApi'
 import { relativeDate } from '../lib/relativeDate'
 import PrerollPlayer from '../components/PrerollPlayer'
+import OfflineVideo from '../components/OfflineVideo'
+import { getOfflineItems, cacheMedia } from '../lib/offlineStore'
+import { useOnline } from '../lib/useOnline'
 
 function embedUrl(url = '') {
   return url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
@@ -33,6 +37,7 @@ function Recommendation({ item, avatarUrl='' }) {
 
 export default function VideoPage() {
   const { id } = useParams()
+  const online = useOnline()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [item, setItem] = useState(null)
@@ -51,9 +56,17 @@ export default function VideoPage() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
+    if (!online) {
+      const saved = getOfflineItems().filter(video => !isShortContent(video))
+      setItem(saved.find(video => video.id === id) || saved[0] || null)
+      setCatalog(saved)
+      setLoading(false)
+      return () => { cancelled = true }
+    }
     Promise.all([fetchContentById(id), fetchContent()]).then(async ([content, contentData]) => {
       if (cancelled) return
       setItem(content)
+      if (content) cacheMedia(content)
       setCatalog(contentData || [])
       fetchProfileAvatarsByUserIds((contentData || []).map(video => video.user_id)).then(map => { if (!cancelled) setCatalogAvatars(map) }).catch(() => {})
       setLikeCount(content?.like_count || 0)
@@ -61,9 +74,9 @@ export default function VideoPage() {
         const profile = await getProfile(content.user_id)
         if (!cancelled) setAvatarUrl(profile?.avatar_url || '')
       }
-    }).finally(() => { if (!cancelled) setLoading(false) })
+    }).catch(() => { if (!cancelled) { const saved = getOfflineItems(); setItem(saved.find(video => video.id === id) || null); setCatalog(saved) } }).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [id])
+  }, [id, online])
 
   useEffect(() => { if (user?.id && item) fetchLikeStatus(user.id, id).then(setLiked) }, [user?.id, item, id])
 
@@ -91,7 +104,7 @@ export default function VideoPage() {
   return (
     <div className="mx-auto grid max-w-[1600px] gap-8 px-4 py-6 sm:px-6 xl:grid-cols-[minmax(0,1fr)_390px]">
       <section className="min-w-0">
-        <div className="aspect-video overflow-hidden rounded-[18px] bg-black shadow-sm"><PrerollPlayer key={id}><Player item={item} /></PrerollPlayer></div>
+        <div className="aspect-video overflow-hidden rounded-[18px] bg-black shadow-sm">{item.offline_media ? <OfflineVideo src={item.media_url} controls className="h-full w-full object-contain" /> : <PrerollPlayer key={id}><Player item={item} /></PrerollPlayer>}</div>
         <h1 className="mt-4 text-xl font-extrabold leading-tight tracking-[-0.02em] sm:text-2xl">{item.title}</h1>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--app-border)] pb-5">
           <Link to={item.user_id ? `/channel/${item.user_id}` : item.username ? `/u/${encodeURIComponent(item.username)}` : '#'} className="flex min-w-0 items-center gap-3">
