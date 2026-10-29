@@ -130,13 +130,8 @@ export async function cacheMedia(item, { persistent = false } = {}) {
   }
   const revision = revisions.get(item.id) || 0
   const task = (async () => {
-    let url = item.media_url
-    if (/\.m3u8(?:\?|$)/i.test(url) && !document.createElement('video').canPlayType('application/vnd.apple.mpegurl')) {
-      if (item.storage_provider !== 'bunny_stream' && !item.bunny_video_id) throw new Error('This stream cannot be downloaded in this browser.')
-      const parsed = new URL(url)
-      parsed.pathname = parsed.pathname.replace(/playlist\.m3u8$/i, 'play_360p.mp4')
-      url = parsed.href
-    }
+    // Keep the actual stream URL. Bunny MP4 alternatives may not exist.
+    const url = item.media_url
     const result = await workerMessage({ type: 'OFFLINE_CACHE', item: { id: item.id, url, thumbnail: item.thumbnail_url } })
     return storageTask(async () => {
       if (revision !== (revisions.get(item.id) || 0)) {

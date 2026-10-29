@@ -24,6 +24,7 @@
     "express": "^5.2.1",
     "firebase": "12.17.1",
     "helmet": "^8.1.0",
+    "hls.js": "1.6.16",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "react": "^19.2.4",

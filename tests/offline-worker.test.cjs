@@ -104,15 +104,32 @@ test('removing an active download aborts it and leaves no video cache', async ()
 })
 test('connectivity probes never succeed from a cached app shell', async () => {
   const env = setup(async () => { throw new Error('No connection') })
-  await vm.runInContext("caches.open('mplace-shell-v7').then(cache => cache.put('/index.html?mplace-connectivity=1', new Response('cached shell')))", env.context)
+  await vm.runInContext("caches.open('mplace-shell-v8').then(cache => cache.put('/index.html?mplace-connectivity=1', new Response('cached shell')))", env.context)
   let response
   env.handlers.fetch({ request: new Request('https://app.test/index.html?mplace-connectivity=1'), respondWith(value) { response = value } })
   await assert.rejects(response, /No connection/)
 })
 test('navigation uses the saved application shell when the network is unavailable', async () => {
   const env = setup(async () => { throw new Error('No connection') })
-  await vm.runInContext("caches.open('mplace-shell-v7').then(cache => cache.put('/index.html', new Response('MPlace app')))", env.context)
+  await vm.runInContext("caches.open('mplace-shell-v8').then(cache => cache.put('/index.html', new Response('MPlace app')))", env.context)
   let response
   env.handlers.fetch({ request: { method: 'GET', url: 'https://app.test/blinks', mode: 'navigate' }, respondWith(value) { response = value } })
   assert.equal(await (await response).text(), 'MPlace app')
+})
+
+test('Safari suffix ranges return the end of the cached file', async () => {
+  const env = setup(async () => new Response('abcdefghij', { headers: { 'Content-Type': 'application/octet-stream' } }))
+  await vm.runInContext("saveVideo({ id: 'suffix', url: 'https://media.test/v.mp4' })", env.context)
+  let response
+  env.handlers.fetch({ request: new Request('https://app.test/__mplace_offline_media__/suffix?url=https%3A%2F%2Fmedia.test%2Fv.mp4', { headers: { Range: 'bytes=-4' } }), respondWith(value) { response = value } })
+  response = await response
+  assert.equal(response.status, 206)
+  assert.equal(response.headers.get('content-range'), 'bytes 6-9/10')
+  assert.equal(response.headers.get('content-type'), 'video/mp4')
+  assert.equal(await response.text(), 'ghij')
+})
+test('empty media responses are rejected rather than saved as a black player', async () => {
+  const env = setup(async () => new Response(''))
+  await assert.rejects(vm.runInContext("saveVideo({ id: 'empty', url: 'https://media.test/v.mp4' })", env.context), /empty file/)
+  assert.equal(env.storage.has('mplace-media-v2-empty'), false)
 })

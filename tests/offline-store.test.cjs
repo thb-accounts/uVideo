@@ -130,3 +130,10 @@ test('embedded videos are refused and offline requests never start downloads', a
   await assert.rejects(env.api.cacheMedia(video('offline')), /Connect/)
   assert.equal(env.messages.length, 0)
 })
+
+test('HLS downloads keep the real playlist URL instead of guessing a missing MP4', async () => {
+  const env = await setup()
+  await env.api.cacheMedia({ ...video('stream'), media_url: 'https://media.test/stream/playlist.m3u8', storage_provider: 'bunny_stream' }, { persistent: true })
+  assert.equal(env.messages[0].item.url, 'https://media.test/stream/playlist.m3u8')
+  assert.match(env.api.getOfflineItems()[0].media_url, /playlist.m3u8/)
+})

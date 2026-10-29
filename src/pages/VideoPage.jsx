@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
 import {
@@ -37,6 +37,8 @@ function Recommendation({ item, avatarUrl='' }) {
 export default function VideoPage() {
   const { id } = useParams()
   const online = useOnline()
+  const location = useLocation()
+  const useSaved = !online || new URLSearchParams(location.search).get('downloaded') === '1'
   const { items: offlineItems } = useOfflineLibrary()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -55,7 +57,7 @@ export default function VideoPage() {
   useEffect(() => {
     let cancelled = false
     setLoading(true)
-    if (!online) {
+    if (useSaved) {
       const saved = getOfflineItems()
       setItem(saved.find(video => video.id === id) || null)
       setCatalog(saved)
@@ -74,11 +76,11 @@ export default function VideoPage() {
       }
     }).catch(() => { if (!cancelled) { const saved = getOfflineItems(); setItem(saved.find(video => video.id === id) || null); setCatalog(saved) } }).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [id, online])
+  }, [id, online, useSaved])
 
   useEffect(() => {
-    if (!online) setItem(offlineItems.find(video => video.id === id) || null)
-  }, [online, offlineItems, id])
+    if (useSaved) setItem(offlineItems.find(video => video.id === id) || null)
+  }, [useSaved, offlineItems, id])
 
   async function handleDelete() {
     setDeleting(true)
@@ -96,7 +98,7 @@ export default function VideoPage() {
   return (
     <div className="mx-auto grid watch-layout max-w-[1600px] gap-8 px-4 py-6 sm:px-6 xl:grid-cols-[minmax(0,1fr)_390px]">
       <section className="min-w-0">
-        {!online && <p className="mb-4 text-sm text-[var(--app-muted)]">MPlace Offline · <Link to={item.type === 'short' || item.type === 'slim' ? '/blinks' : '/'} className="font-semibold text-[var(--brand-primary)]">Back to saved videos</Link></p>}
+        {useSaved && <p className="mb-4 text-sm text-[var(--app-muted)]">MPlace Offline · <Link to={item.type === 'short' || item.type === 'slim' ? '/blinks' : '/'} className="font-semibold text-[var(--brand-primary)]">Back to saved videos</Link></p>}
         <div className="aspect-video overflow-hidden rounded-[18px] bg-black shadow-sm">{item.offline_media ? <OfflineVideo src={item.media_url} controls className="h-full w-full object-contain" /> : <PrerollPlayer key={id}><Player item={item} /></PrerollPlayer>}</div>
         <h1 className="mt-4 text-xl font-extrabold leading-tight tracking-[-0.02em] sm:text-2xl">{item.title}</h1>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--app-border)] pb-5">
@@ -114,7 +116,7 @@ export default function VideoPage() {
         {likeError && <p role="alert" className="mt-3 text-sm text-red-700">{likeError}</p>}
         <div className="theme-card mt-5 rounded-[18px] border p-4"><p className="text-sm font-bold">{[item.category || 'Video', relativeDate(item.created_at)].filter(Boolean).join(' · ')}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--app-muted)]">{item.description || 'A video shared on MPlace Videos.'}</p></div>
       </section>
-      <aside className="space-y-4"><h2 className="text-lg font-extrabold tracking-[-0.02em]">{online ? 'Up next' : 'Also on this device'}</h2>{recommendations.map((video) => <Recommendation key={video.id} item={video} avatarUrl={catalogAvatars[video.user_id] || video.avatar_url || ''} />)}{recommendations.length === 0 && <p className="text-sm text-[var(--app-muted)]">More videos are on the way.</p>}</aside>
+      <aside className="space-y-4"><h2 className="text-lg font-extrabold tracking-[-0.02em]">{useSaved ? 'Also on this device' : 'Up next'}</h2>{recommendations.map((video) => <Recommendation key={video.id} item={video} avatarUrl={catalogAvatars[video.user_id] || video.avatar_url || ''} />)}{recommendations.length === 0 && <p className="text-sm text-[var(--app-muted)]">More videos are on the way.</p>}</aside>
       {showDeleteModal && <div className="fixed inset-0 z-[70] grid place-items-center bg-[#142019]/45 p-4" onClick={() => setShowDeleteModal(false)}><div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}><h2 className="text-lg font-extrabold">Delete this video?</h2><p className="mt-2 text-sm text-[var(--app-muted)]">This action cannot be undone.</p><div className="mt-6 flex justify-end gap-3"><button onClick={() => setShowDeleteModal(false)} className="rounded-xl px-4 py-2 text-sm font-bold">Cancel</button><button onClick={handleDelete} disabled={deleting} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white">{deleting ? 'Deleting…' : 'Delete'}</button></div></div></div>}
     </div>
   )

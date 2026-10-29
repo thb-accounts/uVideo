@@ -1,4 +1,4 @@
-const SHELL = 'mplace-shell-v7'
+const SHELL = 'mplace-shell-v8'
 const MEDIA_PREFIX = 'mplace-media-v2-'
 const MAX_BYTES = 60 * 1024 * 1024
 const downloads = new Map()
@@ -35,6 +35,7 @@ async function saveVideo(item, signal) {
     const mime = response.headers.get('content-type') || ''
     if (/text\/html/i.test(mime)) throw new Error('Video URL returned a web page')
     const bytes = await response.clone().arrayBuffer()
+    if (!bytes.byteLength) throw new Error('Video host returned an empty file')
     total += bytes.byteLength
     if (total > MAX_BYTES) throw new Error('Video exceeds offline size limit')
     await cache.put(url, response)
@@ -118,6 +119,8 @@ async function offlineResponse(request, parsed) {
   if (!cached) return new Response('Offline video unavailable', { status: 404 })
   const headers = new Headers(cached.headers)
   headers.delete('content-encoding')
+  headers.set('Accept-Ranges', 'bytes')
+  if (/\.mp4(?:[?#]|$)/i.test(original)) headers.set('Content-Type', 'video/mp4')
   const range = request.headers.get('range')
   if (/\.m3u8(?:\?|$)/i.test(original) && !range) {
     const playlist = await cached.text()
@@ -134,9 +137,11 @@ async function offlineResponse(request, parsed) {
     headers.set('content-length', String(bytes.byteLength))
     return new Response(bytes, { status: 200, headers })
   }
-  const match = /^bytes=(\d+)-(\d*)$/.exec(range)
-  if (!match) return new Response(null, { status: 416 })
-  const start = Number(match[1]), end = match[2] ? Math.min(Number(match[2]), bytes.byteLength - 1) : bytes.byteLength - 1
+  const match = /^bytes=(\d*)-(\d*)$/.exec(range)
+  if (!match || (!match[1] && !match[2])) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${bytes.byteLength}` } })
+  const suffix = !match[1]
+  const start = suffix ? Math.max(0, bytes.byteLength - Number(match[2])) : Number(match[1])
+  const end = suffix || !match[2] ? bytes.byteLength - 1 : Math.min(Number(match[2]), bytes.byteLength - 1)
   if (start > end || start >= bytes.byteLength) return new Response(null, { status: 416, headers: { 'Content-Range': `bytes */${bytes.byteLength}` } })
   headers.set('Content-Range', `bytes ${start}-${end}/${bytes.byteLength}`)
   headers.set('Content-Length', String(end - start + 1)); headers.set('Accept-Ranges', 'bytes')
