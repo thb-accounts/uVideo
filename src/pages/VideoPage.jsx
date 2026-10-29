@@ -5,19 +5,18 @@ import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
 import {
   deleteContent,
   fetchContent,
-  isShortContent,
   fetchContentById,
-  fetchLikeStatus,
   getProfile,
   fetchProfileAvatarsByUserIds,
-  likeContent,
-  unlikeContent,
 } from '../lib/contentApi'
 import { relativeDate } from '../lib/relativeDate'
 import PrerollPlayer from '../components/PrerollPlayer'
 import OfflineVideo from '../components/OfflineVideo'
-import { getOfflineItems, cacheMedia } from '../lib/offlineStore'
+import DownloadButton from '../components/DownloadButton'
+import { useOfflineLibrary } from '../hooks/useOfflineLibrary'
+import { getOfflineItems, prefetchVideos } from '../lib/offlineStore'
 import { useOnline } from '../lib/useOnline'
+import { useContentLike } from '../hooks/useContentLike'
 
 function embedUrl(url = '') {
   return url.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')
@@ -38,14 +37,14 @@ function Recommendation({ item, avatarUrl='' }) {
 export default function VideoPage() {
   const { id } = useParams()
   const online = useOnline()
+  const { items: offlineItems } = useOfflineLibrary()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [item, setItem] = useState(null)
   const [catalog, setCatalog] = useState([])
   const [avatarUrl, setAvatarUrl] = useState('')
   const [catalogAvatars, setCatalogAvatars] = useState({})
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(0)
+  const { liked, likeCount, likeDisabled, likeError, toggleLike } = useContentLike(id, item?.like_count || 0)
   const [loading, setLoading] = useState(true)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -57,8 +56,8 @@ export default function VideoPage() {
     let cancelled = false
     setLoading(true)
     if (!online) {
-      const saved = getOfflineItems().filter(video => !isShortContent(video))
-      setItem(saved.find(video => video.id === id) || saved[0] || null)
+      const saved = getOfflineItems()
+      setItem(saved.find(video => video.id === id) || null)
       setCatalog(saved)
       setLoading(false)
       return () => { cancelled = true }
@@ -66,10 +65,9 @@ export default function VideoPage() {
     Promise.all([fetchContentById(id), fetchContent()]).then(async ([content, contentData]) => {
       if (cancelled) return
       setItem(content)
-      if (content) cacheMedia(content)
+      if (content) prefetchVideos([content])
       setCatalog(contentData || [])
       fetchProfileAvatarsByUserIds((contentData || []).map(video => video.user_id)).then(map => { if (!cancelled) setCatalogAvatars(map) }).catch(() => {})
-      setLikeCount(content?.like_count || 0)
       if (content?.user_id) {
         const profile = await getProfile(content.user_id)
         if (!cancelled) setAvatarUrl(profile?.avatar_url || '')
@@ -78,15 +76,9 @@ export default function VideoPage() {
     return () => { cancelled = true }
   }, [id, online])
 
-  useEffect(() => { if (user?.id && item) fetchLikeStatus(user.id, id).then(setLiked) }, [user?.id, item, id])
-
-  async function handleLike() {
-    if (!user) return navigate('/auth')
-    const next = !liked
-    setLiked(next)
-    setLikeCount((count) => next ? count + 1 : Math.max(0, count - 1))
-    if (next) await likeContent(user.id, id); else await unlikeContent(user.id, id)
-  }
+  useEffect(() => {
+    if (!online) setItem(offlineItems.find(video => video.id === id) || null)
+  }, [online, offlineItems, id])
 
   async function handleDelete() {
     setDeleting(true)
@@ -102,8 +94,9 @@ export default function VideoPage() {
   if (!item) return <div className="grid min-h-[70vh] place-items-center text-center"><div><p className="text-xl font-bold">Video not found.</p><Link to="/" className="mt-3 inline-block text-[var(--brand-primary)]">Return home</Link></div></div>
 
   return (
-    <div className="mx-auto grid max-w-[1600px] gap-8 px-4 py-6 sm:px-6 xl:grid-cols-[minmax(0,1fr)_390px]">
+    <div className="mx-auto grid watch-layout max-w-[1600px] gap-8 px-4 py-6 sm:px-6 xl:grid-cols-[minmax(0,1fr)_390px]">
       <section className="min-w-0">
+        {!online && <p className="mb-4 text-sm text-[var(--app-muted)]">MPlace Offline · <Link to={item.type === 'short' || item.type === 'slim' ? '/blinks' : '/'} className="font-semibold text-[var(--brand-primary)]">Back to saved videos</Link></p>}
         <div className="aspect-video overflow-hidden rounded-[18px] bg-black shadow-sm">{item.offline_media ? <OfflineVideo src={item.media_url} controls className="h-full w-full object-contain" /> : <PrerollPlayer key={id}><Player item={item} /></PrerollPlayer>}</div>
         <h1 className="mt-4 text-xl font-extrabold leading-tight tracking-[-0.02em] sm:text-2xl">{item.title}</h1>
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--app-border)] pb-5">
@@ -112,14 +105,16 @@ export default function VideoPage() {
             <span className="min-w-0"><strong className="block truncate text-sm">{item.username || 'MPlace creator'}</strong><small className="text-[var(--app-muted)]">View channel</small></span>
           </Link>
           <div className="flex flex-wrap gap-2">
-            <button onClick={handleLike} className={`min-h-11 rounded-xl px-4 text-sm font-bold transition ${liked ? 'bg-[#126341] text-white' : 'border border-[var(--app-border)] bg-white hover:bg-[#e8f4ed] hover:text-[#126341]'}`}>{liked ? '♥' : '♡'} {likeCount}</button>
+            <DownloadButton item={item}/>
+            <button onClick={toggleLike} disabled={likeDisabled} aria-label={liked ? 'Unlike' : 'Like'} aria-pressed={liked} className={`min-h-11 rounded-xl px-4 text-sm font-bold transition ${liked ? 'bg-[#126341] text-white' : 'border border-[var(--app-border)] bg-white hover:bg-[#e8f4ed] hover:text-[#126341]'}`}>{liked ? '♥' : '♡'} {likeCount} <span className="ml-1">{liked ? 'Liked' : 'Like'}</span></button>
             <button onClick={handleShare} className="min-h-11 rounded-xl border border-[var(--app-border)] bg-white px-4 text-sm font-bold hover:bg-[#e8f4ed] hover:text-[#126341]">Share</button>
             {isOwner && <button onClick={() => setShowDeleteModal(true)} className="min-h-11 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-bold text-red-700 hover:bg-red-100">Delete</button>}
           </div>
         </div>
+        {likeError && <p role="alert" className="mt-3 text-sm text-red-700">{likeError}</p>}
         <div className="theme-card mt-5 rounded-[18px] border p-4"><p className="text-sm font-bold">{[item.category || 'Video', relativeDate(item.created_at)].filter(Boolean).join(' · ')}</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[var(--app-muted)]">{item.description || 'A video shared on MPlace Videos.'}</p></div>
       </section>
-      <aside className="space-y-4"><h2 className="text-lg font-extrabold tracking-[-0.02em]">Up next</h2>{recommendations.map((video) => <Recommendation key={video.id} item={video} avatarUrl={catalogAvatars[video.user_id] || video.avatar_url || ''} />)}{recommendations.length === 0 && <p className="text-sm text-[var(--app-muted)]">More videos are on the way.</p>}</aside>
+      <aside className="space-y-4"><h2 className="text-lg font-extrabold tracking-[-0.02em]">{online ? 'Up next' : 'Also on this device'}</h2>{recommendations.map((video) => <Recommendation key={video.id} item={video} avatarUrl={catalogAvatars[video.user_id] || video.avatar_url || ''} />)}{recommendations.length === 0 && <p className="text-sm text-[var(--app-muted)]">More videos are on the way.</p>}</aside>
       {showDeleteModal && <div className="fixed inset-0 z-[70] grid place-items-center bg-[#142019]/45 p-4" onClick={() => setShowDeleteModal(false)}><div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-2xl" onClick={(event) => event.stopPropagation()}><h2 className="text-lg font-extrabold">Delete this video?</h2><p className="mt-2 text-sm text-[var(--app-muted)]">This action cannot be undone.</p><div className="mt-6 flex justify-end gap-3"><button onClick={() => setShowDeleteModal(false)} className="rounded-xl px-4 py-2 text-sm font-bold">Cancel</button><button onClick={handleDelete} disabled={deleting} className="rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white">{deleting ? 'Deleting…' : 'Delete'}</button></div></div></div>}
     </div>
   )

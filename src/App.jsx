@@ -13,7 +13,6 @@ import SettingsPage from './pages/SettingsPage'
 import UploadPage from './pages/UploadPage'
 import VideoPage from './pages/VideoPage'
 import ModeratorDashboardPage from './pages/ModeratorDashboardPage'
-import OfflinePage from './pages/OfflinePage'
 import EditorPage from './pages/EditorPage'
 import SoundboardPage from './pages/SoundboardPage'
 import VerificationPage from './pages/VerificationPage'
@@ -35,7 +34,7 @@ export default function App() {
         <Route path="dashboard" element={<Navigate to="/" replace />} />
         <Route path="blinks" element={<DashboardPage />} />
         <Route path="ads-admin" element={<RequireAuth><AdsAdminPage /></RequireAuth>} />
-        <Route path="offline" element={<OfflinePage />} />
+        <Route path="offline" element={<Navigate to="/?downloads=1" replace />} />
         <Route path="editor" element={<EditorPage />} />
         <Route path="soundboard" element={<SoundboardPage />} />
         <Route path="shorts" element={<Navigate to="/blinks" replace />} />

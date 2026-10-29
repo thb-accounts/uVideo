@@ -51,3 +51,66 @@ a { color: inherit; text-decoration: none; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #bdc1c6; border: 3px solid var(--app-bg); border-radius: 999px; }
 @media (max-width:1100px) { input,textarea,select { font-size:16px !important; } }
+
+/* MPlace Videos — discovery, viewing and creation share one visual language. */
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --app-bg: #f7f8fa;
+  --app-text: #18251f;
+  --app-muted: #65716b;
+  --app-border: #e4e9e6;
+  --app-shadow: 0 4px 20px rgba(25, 51, 37, .04);
+}
+:focus-visible { outline: 3px solid #53a782; outline-offset: 4px; }
+button:disabled { cursor: default; opacity: .55; }
+.app-header { gap: 24px; border: 0; box-shadow: 0 1px 0 var(--app-border); }
+.app-search > div { height: 42px; padding-right: 4px; border: 1px solid var(--app-border); background: #f7f8fa; }
+.app-search > div > svg { display: none; }
+.search-submit { display: grid; place-items: center; width: 38px; height: 34px; border-radius: 999px; background: white; color: var(--brand-primary); }
+.app-sidebar { border-right: 1px solid var(--app-border); }
+.app-sidebar nav a { transition: background .15s, color .15s; }
+.sidebar-note { background: #f0f6f2; }
+.eyebrow { font-size: 10px; letter-spacing: .18em; font-weight: 750; color: #397658; }
+.discovery-banner { background: linear-gradient(115deg, #eaf3ed 0%, #f2f5ee 65%, #e8f0e6 100%); border: 1px solid #e0e9df; }
+.blinks-entry { background: #ffffff90; border: 1px solid #ffffff; transition: transform .2s, background .2s; }
+.blinks-entry:hover { background: white; transform: translateY(-2px); }
+.category-chip { border: 1px solid var(--app-border); }
+.category-chip:hover { border-color: #9fc4ad; }
+.category-chip.selected { background: #183e2c; color: white; border-color: #183e2c; }
+.video-thumbnail { border-radius: 16px; transition: transform .2s, box-shadow .2s; background: #e8ede9; }
+.video-card:hover .video-thumbnail { transform: translateY(-3px); box-shadow: 0 10px 22px #183e2c15; }
+.video-card h3 { font-weight: 650; line-height: 1.5; }
+.watch-layout > section > div:first-child { border-radius: 20px; box-shadow: 0 8px 32px #18251f12; }
+.watch-layout > aside { padding: 20px; border: 1px solid var(--app-border); background: white; border-radius: 20px; align-self: start; }
+.watch-layout > aside > a { grid-template-columns: minmax(90px, 42%) minmax(0, 1fr); }
+.watch-layout button { border-radius: 999px; }
+.mobile-nav { height: calc(68px + env(safe-area-inset-bottom)); box-shadow: 0 -4px 20px #183e2c05; }
+.mobile-nav a[aria-current="page"] { background: #f0f6f2; }
+@media (max-width: 639px) {
+  .app-header { height: 112px; flex-wrap: wrap; gap: 8px; padding: 10px 16px; align-content: center; }
+  .app-header > a { order: 0; }
+  .app-header > div { order: 1; }
+  .app-search { order: 2; max-width: none; flex-basis: 100%; }
+  .app-main { padding-top: 112px; }
+  .category-bar { top: 112px; }
+  .discovery-banner { margin-top: 16px; padding: 24px; }
+  .discovery-banner h1 { font-size: 28px; }
+  .blinks-entry { width: 100%; padding: 12px 16px; }
+  .watch-layout { padding-top: 16px; gap: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+.blinks-height { height: calc(100dvh - 64px); }
+.mobile-profile > div:first-child { border-radius: 20px; background: linear-gradient(#eef5ef, white); padding: 24px 12px; }
+.channel-layout > section, .creator-layout > form { box-shadow: var(--app-shadow); }
+.offline-layout article { transition: box-shadow .2s; }
+.offline-layout article:hover { box-shadow: 0 8px 24px #183e2c0d; }
+@media (min-width:640px) and (max-width:1023px) { .blinks-height { height: calc(100dvh - 132px - env(safe-area-inset-bottom)); } }
+@media (max-width:639px) { .blinks-height { height: calc(100dvh - 180px - env(safe-area-inset-bottom)); } }
+.downloads-dialog::backdrop { background: #18251f66; backdrop-filter: blur(4px); }
+.downloads-dialog { max-height: 90dvh; overflow-y: auto; }
+.offline-mode { --app-bg: #f5f5f0; --app-muted: #6c7368; }
+.offline-collection { animation: none; }
+.offline-collection article { box-shadow: 0 3px 15px #183e2c04; }
+.offline-mode .category-bar { position: static; }

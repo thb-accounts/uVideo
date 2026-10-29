@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useLocation } from 'react-router-dom'
+import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 
 export default function AuthPage() {
@@ -45,29 +45,30 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md items-center px-4">
-      <div className="w-full rounded-2xl border border-white/10 bg-slate-900/80 p-6 shadow-glow">
-        <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-slate-400">MPlace ID</p>
-        <h1 className="mb-2 text-2xl font-bold text-neon-cyan">{mode === 'login' ? 'Sign in to MVideo' : 'Create your MPlace ID'}</h1>
-        <p className="mb-4 text-sm text-slate-300">One account for MVideo and the wider MPlace family.</p>
-        {!hasSupabaseConfig && <p className="mb-3 rounded-md bg-yellow-500/15 p-2 text-xs text-yellow-200">Missing Supabase env vars. Video data syncing is disabled until configured.</p>}
+    <div className="auth-layout mx-auto flex min-h-screen max-w-md items-center px-4 py-8">
+      <div className="w-full rounded-3xl border border-[var(--app-border)] bg-white p-7 shadow-xl shadow-green-950/5">
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--brand-primary)]">MPlace ID</p>
+        <h1 className="mb-2 text-2xl font-bold text-[var(--app-text)]">{mode === 'login' ? 'Welcome to MPlace Videos' : 'Create your MPlace ID'}</h1>
+        <p className="mb-4 text-sm text-[var(--app-muted)]">One account for MPlace Videos and the wider MPlace family.</p>
+        {!hasSupabaseConfig && <p className="mb-3 rounded-md bg-amber-50 p-2 text-xs text-amber-900">Missing Supabase env vars. Video data syncing is disabled until configured.</p>}
         {location.state?.from && <p className="mb-3 rounded-md bg-[rgba(82,97,58,0.18)] p-2 text-xs text-[var(--brand-cream)]">You can browse without logging in. Sign in is required for: {location.state.from}.</p>}
         <div className="mb-4 flex gap-2">
           {['login', 'signup'].map((item) => (
-            <button key={item} type="button" onClick={() => { setMode(item); setError(''); setStatus('') }} className={`flex-1 rounded-md px-3 py-2 ${mode === item ? 'bg-neon-violet/50' : 'bg-white/5'}`}>
+            <button key={item} type="button" onClick={() => { setMode(item); setError(''); setStatus('') }} className={`flex-1 rounded-md px-3 py-2 ${mode === item ? 'bg-[#e7f3ec] text-[#185c3d]' : 'bg-[#f7f8fa]'}`}>
               {item === 'login' ? 'Sign in' : 'Create account'}
             </button>
           ))}
         </div>
-        <button type="button" onClick={handleGoogleSignIn} className="mb-3 w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 font-semibold text-white hover:bg-white/10">Continue with Google</button>
-        <div className="mb-3 flex items-center gap-3 text-xs text-slate-500"><span className="h-px flex-1 bg-white/10" /><span>or</span><span className="h-px flex-1 bg-white/10" /></div>
+        <button type="button" onClick={handleGoogleSignIn} className="mb-3 w-full rounded-md border border-[var(--app-border)] bg-[#f7f8fa] px-3 py-2 font-semibold text-[var(--app-text)] hover:bg-[#e7f3ec]">Continue with Google</button>
+        <div className="mb-3 flex items-center gap-3 text-xs text-slate-500"><span className="h-px flex-1 bg-[var(--app-border)]" /><span>or</span><span className="h-px flex-1 bg-[var(--app-border)]" /></div>
         <form className="space-y-3" onSubmit={handleSubmit}>
-          <input className="w-full rounded-md bg-slate-800 p-2" name="email" type="email" placeholder="Email" required />
-          <input className="w-full rounded-md bg-slate-800 p-2" name="password" type="password" placeholder="Password" minLength={6} required />
-          {error && <p className="text-sm text-red-300">{error}</p>}
-          {status && <p className="text-sm text-emerald-300">{status}</p>}
-          <button className="w-full rounded-md bg-neon-cyan px-3 py-2 font-semibold text-slate-950">{mode === 'login' ? 'Continue with MPlace ID' : 'Create MPlace ID'}</button>
+          <input aria-label="Email" autoComplete="email" className="w-full rounded-md border border-[var(--app-border)] bg-white p-3 text-[var(--app-text)]" name="email" type="email" placeholder="Email" required />
+          <input aria-label="Password" autoComplete={mode === 'signup' ? 'new-password' : 'current-password'} className="w-full rounded-md border border-[var(--app-border)] bg-white p-3 text-[var(--app-text)]" name="password" type="password" placeholder="Password" minLength={6} required />
+          {error && <p className="text-sm text-red-700">{error}</p>}
+          {status && <p className="text-sm text-emerald-700">{status}</p>}
+          <button className="w-full rounded-md brand-button px-3 py-3 font-semibold">{mode === 'login' ? 'Continue with MPlace ID' : 'Create MPlace ID'}</button>
         </form>
+        <Link to="/" className="mt-6 block text-center text-sm text-[var(--app-muted)]">← Back to browsing</Link>
       </div>
     </div>
   )

@@ -48,12 +48,12 @@ export default function UploadPage(){
  }
 
  if(profileLoading)return <div className="mx-auto max-w-3xl p-8 text-sm text-[#5f6368]">Checking creator access…</div>
- if(verificationStatus!=='approved')return <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8"><h1 className="text-2xl font-medium text-[#202124]">Creator access required</h1><p className="mt-3 max-w-xl text-sm leading-6 text-[#5f6368]">Creators must be at least 15, or use an account managed by a parent. Contact the MPlace Videos creator team to continue.</p><Link className="mt-6 inline-flex rounded-full bg-[#1f6f4a] px-5 py-2.5 text-sm font-medium text-white" to="/verification">Get in touch</Link></div>
+ if(verificationStatus!=='approved')return <div className="mx-auto max-w-3xl px-5 py-12 sm:px-8"><h1 className="text-3xl font-bold tracking-tight text-[#202124]">Creator access required</h1><p className="mt-3 max-w-xl text-sm leading-6 text-[#5f6368]">Creators must be at least 15, or use an account managed by a parent. Contact the MPlace Videos creator team to continue.</p><Link className="mt-6 inline-flex rounded-full bg-[#1f6f4a] px-5 py-2.5 text-sm font-medium text-white" to="/verification">Get in touch</Link></div>
 
  const field='theme-input min-h-12 rounded-lg border px-3.5 py-2.5 text-sm'
- return <div className="mx-auto max-w-4xl px-5 py-10 sm:px-8">
-  <div className="mb-8"><h1 className="text-2xl font-medium text-[#202124]">Create a video</h1><p className="mt-1 text-sm text-[#5f6368]">Upload and publish to MPlace Videos as @{username}.</p></div>
-  <form ref={formRef} onSubmit={handleSubmit} className="overflow-hidden rounded-2xl border border-[var(--app-border)] bg-white">
+ return <div className="creator-layout mx-auto max-w-4xl px-5 py-10 sm:px-8">
+  <div className="mb-8"><h1 className="text-3xl font-bold tracking-tight text-[#202124]">Create a video</h1><p className="mt-1 text-sm text-[#5f6368]">Upload and publish to MPlace Videos as @{username}.</p></div>
+  <form ref={formRef} onSubmit={handleSubmit} className="overflow-hidden rounded-3xl border border-[var(--app-border)] bg-white">
    <section className="border-b border-[var(--app-border)] p-6 sm:p-8">
     <div className="mb-6 flex items-center gap-3"><div className="grid h-10 w-10 place-items-center rounded-full bg-[#e7f3ec] text-[#185c3d]"><UploadIcon/></div><div><h2 className="font-medium text-[#202124]">Video details</h2><p className="text-sm text-[#5f6368]">Add the information viewers will see.</p></div></div>
     <div className="grid gap-5">
@@ -68,7 +68,7 @@ export default function UploadPage(){
    </section>
    <section className="p-6 sm:p-8">
     <h2 className="font-medium text-[#202124]">Media</h2><p className="mt-1 text-sm text-[#5f6368]">Choose a local file. Advanced URL fields are optional.</p>
-    <label className="mt-5 flex min-h-32 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#bdc1c6] bg-[#f8f9fa] p-5 text-center hover:bg-[#f1f3f4]"><UploadIcon/><span className="mt-2 text-sm font-medium text-[#1f6f4a]">{selectedFileName||'Choose video file'}</span><input accept="video/*" className="sr-only" name="video_file" type="file" onChange={e=>setSelectedFileName(e.target.files?.[0]?.name||'')}/></label>
+    <label className="mt-5 flex min-h-48 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-[#bdc1c6] bg-[#f8f9fa] p-5 text-center hover:bg-[#f1f3f4]"><UploadIcon/><span className="mt-2 text-sm font-medium text-[#1f6f4a]">{selectedFileName||'Choose video file'}</span><input accept="video/*" className="sr-only" name="video_file" type="file" onChange={e=>setSelectedFileName(e.target.files?.[0]?.name||'')}/></label>
     <details className="mt-5 border-t border-[var(--app-border)] pt-5"><summary className="cursor-pointer text-sm font-medium text-[#1f6f4a]">Advanced options</summary><div className="mt-5 grid gap-5 sm:grid-cols-2"><label className="grid gap-2 text-sm font-medium">Thumbnail URL<input className={field} name="thumbnail_url" type="url"/></label><label className="grid gap-2 text-sm font-medium">Direct video URL<input className={field} name="media_url" type="url"/></label><label className="grid gap-2 text-sm font-medium sm:col-span-2">Caption URL (.vtt)<input className={field} name="caption_url" type="url"/></label></div></details>
    </section>
    <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--app-border)] bg-[#f8f9fa] px-6 py-4 sm:px-8">{status?<p className="text-sm text-[#5f6368]" role="status">{status}</p>:<span/>}<div className="ml-auto flex gap-2">{submitting&&<button type="button" onClick={()=>uploadAbortRef.current?.abort()} className="rounded-full px-4 py-2 text-sm font-medium text-[#1f6f4a] hover:bg-[#e7f3ec]">Cancel</button>}<button disabled={submitting} className="rounded-full bg-[#1f6f4a] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#185c3d] disabled:opacity-60">{submitting?'Publishing…':'Publish'}</button></div></footer>

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import BrandLogo from './BrandLogo'
+import DownloadManager from './DownloadManager'
+import { useOnline } from '../lib/useOnline'
 import { useAuth } from '../context/useAuth'
 import { getProfile } from '../lib/contentApi'
 
@@ -20,9 +22,8 @@ const Icon = ({ name, className = 'h-5 w-5' }) => {
 }
 
 const navItems = [
-  { to: '/', label: 'Home', icon: 'home' },
+  { to: '/', label: 'Videos', icon: 'home' },
   { to: '/blinks', label: 'Blinks', icon: 'blinks' },
-  { to: '/offline', label: 'Offline', icon: 'offline' },
   { to: '/editor', label: 'Editor', icon: 'upload' },
   { to: '/upload', label: 'Upload', icon: 'upload' },
 ]
@@ -31,6 +32,16 @@ export default function AppShell() {
   const { user, signOut } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
+  const online = useOnline()
+  const downloadParams = new URLSearchParams(location.search)
+  const showDownloads = downloadParams.has('downloads')
+  downloadParams.set('downloads', '1')
+  const downloadsHref = `${location.pathname}?${downloadParams}`
+  function closeDownloads() {
+    const params = new URLSearchParams(location.search)
+    params.delete('downloads')
+    navigate({ pathname: location.pathname, search: params.toString() }, { replace: true })
+  }
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [query, setQuery] = useState(new URLSearchParams(location.search).get('search') || '')
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -46,37 +57,41 @@ export default function AppShell() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
-      <header className="fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b border-[var(--app-border)] bg-white px-4 sm:px-6">
+    <div className={`app-shell ${!online ? 'offline-mode' : ''} min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]`}>
+      <header className="app-header fixed inset-x-0 top-0 z-50 flex h-16 items-center gap-3 border-b border-[var(--app-border)] bg-white px-4 sm:px-6">
         <button onClick={() => setSidebarOpen(v => !v)} className="hidden h-10 w-10 place-items-center rounded-full text-[#5f6368] hover:bg-[#f1f3f4] lg:grid" aria-label="Toggle navigation"><Icon name="menu"/></button>
         <BrandLogo />
-        <form onSubmit={handleSearch} className="mx-auto hidden w-full max-w-[720px] sm:block">
+        <form onSubmit={handleSearch} className="app-search mx-auto w-full max-w-[640px]">
           <div className="flex h-12 w-full items-center rounded-full bg-[#f1f3f4] px-4 transition focus-within:bg-white focus-within:shadow-[0_1px_2px_rgba(60,64,67,.3),0_1px_3px_1px_rgba(60,64,67,.15)]">
             <Icon name="search" className="h-5 w-5 shrink-0 text-[#5f6368]"/>
-            <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search videos" className="min-w-0 flex-1 bg-transparent px-3 text-[15px] outline-none placeholder:text-[#70757a]"/>
+            <input type="search" value={query} onChange={e=>setQuery(e.target.value)} aria-label="Search videos" placeholder="Search videos, ideas, creators…" className="min-w-0 flex-1 bg-transparent px-3 text-[15px] outline-none placeholder:text-[#70757a]"/>
+            <button type="submit" aria-label="Submit search" className="search-submit"><Icon name="search"/></button>
           </div>
         </form>
         <div className="ml-auto flex items-center gap-1 sm:ml-0">
+          <Link to={downloadsHref} aria-label="Manage downloads" title="Downloads and storage" className="grid h-10 w-10 place-items-center rounded-full text-[var(--brand-primary)] hover:bg-[#f0f6f2]"><span aria-hidden="true" className="text-2xl">↓</span></Link>
           <Link to="/upload" className="hidden h-10 items-center gap-2 rounded-full border border-[var(--app-border)] bg-white px-4 text-sm font-medium text-[#3c4043] hover:bg-[#f8f9fa] sm:flex"><Icon name="upload"/>Create</Link>
           <Link to={user ? '/profile' : '/auth'} className="ml-1 grid h-9 w-9 place-items-center overflow-hidden rounded-full bg-[#1f6f4a] text-sm font-medium text-white" title={user ? 'Your profile' : 'Sign in'}>{user&&avatarUrl?<img src={avatarUrl} alt="" className="h-full w-full object-cover"/>:(user?.user_metadata?.username || user?.email || 'U')[0].toUpperCase()}</Link>
         </div>
       </header>
 
-      <aside className={`fixed bottom-0 left-0 top-16 z-40 hidden bg-white transition-[width] duration-150 lg:flex lg:flex-col ${sidebarOpen ? 'w-64' : 'w-[72px]'}`}>
-        <nav className="px-3 py-4" aria-label="Main navigation">
-          {navItems.map(item => <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({isActive})=>`mb-1 flex h-12 items-center rounded-full ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name={item.icon}/>{sidebarOpen&&<span className="text-sm font-medium">{item.label}</span>}</NavLink>)}
+      <aside className={`app-sidebar fixed bottom-0 left-0 top-16 z-40 hidden bg-white transition-[width] duration-150 lg:flex lg:flex-col ${sidebarOpen ? 'w-60' : 'w-[80px]'}`}>
+        <nav className="px-3 py-6" aria-label="Main navigation">
+          {navItems.map(item => <NavLink key={item.label} to={item.to} end={item.to === '/'} className={({isActive})=>`mb-1 flex h-12 items-center rounded-xl ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name={item.icon}/>{sidebarOpen&&<span className="text-sm font-medium">{item.label}</span>}</NavLink>)}
           <div className="my-3 border-t border-[#e8eaed]"/>
-          <NavLink to="/settings" className={({isActive})=>`mb-1 flex h-12 items-center rounded-full ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name="settings"/>{sidebarOpen&&<span className="text-sm font-medium">Settings</span>}</NavLink>
-          <NavLink to="/soundboard" className={({isActive})=>`flex h-12 items-center rounded-full ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name="soundboard"/>{sidebarOpen&&<span className="text-sm font-medium">Soundboard</span>}</NavLink>
+          <NavLink to="/settings" className={({isActive})=>`mb-1 flex h-12 items-center rounded-xl ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name="settings"/>{sidebarOpen&&<span className="text-sm font-medium">Settings</span>}</NavLink>
+          <NavLink to="/soundboard" className={({isActive})=>`flex h-12 items-center rounded-xl ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name="soundboard"/>{sidebarOpen&&<span className="text-sm font-medium">Soundboard</span>}</NavLink>
         </nav>
+        {sidebarOpen&&<div className="sidebar-note mx-5 mt-auto mb-5 rounded-2xl p-4"><p className="text-sm font-bold">Make room for your ideas.</p><p className="mt-2 text-xs leading-5 text-[var(--app-muted)]">Share something worth watching.</p><Link to="/upload" className="mt-3 inline-flex text-sm font-bold text-[var(--brand-primary)]">Create a video ↗</Link></div>}
         {sidebarOpen&&user&&<button onClick={handleSignOut} className="mx-7 mb-6 mt-auto text-left text-sm font-medium text-[#1f6f4a]">Sign out</button>}
       </aside>
 
-      <main className={`min-h-screen pb-20 pt-16 transition-[margin] duration-150 lg:pb-0 ${sidebarOpen?'lg:ml-64':'lg:ml-[72px]'}`}><Outlet/></main>
+      <main className={`app-main min-h-screen pb-24 pt-16 transition-[margin] duration-150 lg:pb-0 ${sidebarOpen?'lg:ml-60':'lg:ml-[80px]'}`}><Outlet/></main>
 
-      <nav className="fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-5 border-t border-[var(--app-border)] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label="Mobile navigation">
-        {[{to:'/',label:'Home',icon:'home'},{to:'/blinks',label:'Blinks',icon:'blinks'},{to:'/offline',label:'Offline',icon:'offline'},{to:'/editor',label:'Editor',icon:'upload'},{to:user?'/profile':'/auth',label:user?'You':'Sign in',icon:'profile'}].map(item=><NavLink key={item.label} to={item.to} end={item.to==='/' } className={({isActive})=>`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${isActive?'text-[#185c3d]':'text-[#5f6368]'}`}><Icon name={item.icon}/><span>{item.label}</span></NavLink>)}
+      <nav className="mobile-nav fixed inset-x-0 bottom-0 z-50 grid h-16 grid-cols-4 border-t border-[var(--app-border)] bg-white pb-[env(safe-area-inset-bottom)] lg:hidden" aria-label="Mobile navigation">
+        {[{to:'/',label:'Videos',icon:'home'},{to:'/blinks',label:'Blinks',icon:'blinks'},{to:'/editor',label:'Editor',icon:'upload'},{to:user?'/profile':'/auth',label:user?'You':'Sign in',icon:'profile'}].map(item=><NavLink key={item.label} to={item.to} end={item.to==='/' } className={({isActive})=>`flex flex-col items-center justify-center gap-1 text-[11px] font-medium ${isActive?'text-[#185c3d]':'text-[#5f6368]'}`}><Icon name={item.icon}/><span>{item.label}</span></NavLink>)}
       </nav>
+      {showDownloads && <DownloadManager onClose={closeDownloads}/>}
     </div>
   )
 }

@@ -79,7 +79,7 @@ export default function PublicProfilePage() {
   const videos = data.videos.filter((video) => !isShortContent(video))
 
   return (
-    <main className="mx-auto max-w-5xl p-4 md:p-6">
+    <main className="channel-layout mx-auto max-w-5xl p-5 md:p-8">
       <section className="rounded-2xl border bg-white p-6">
         <div className="flex items-center gap-4">
           {profile.avatar_url
