@@ -126,29 +126,32 @@ export async function updateContentPin({ contentId, userId, isPinned }) {
 
 export async function fetchLikeStatus(userId, contentId) {
   if (!hasSupabaseConfig || !userId) return false
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('liked_videos')
     .select('user_id')
     .eq('user_id', userId)
     .eq('content_id', contentId)
     .maybeSingle()
+  if (error) throw error
   return Boolean(data)
 }
 
 export async function likeContent(userId, contentId) {
-  if (!hasSupabaseConfig || !userId) return
-  await supabase
+  if (!hasSupabaseConfig || !userId) throw new Error('Sign in while online to like videos.')
+  const { error } = await supabase
     .from('liked_videos')
-    .upsert({ user_id: userId, content_id: contentId }, { onConflict: 'user_id,content_id' })
+    .upsert({ user_id: userId, content_id: contentId }, { onConflict: 'user_id,content_id', ignoreDuplicates: true })
+  if (error) throw error
 }
 
 export async function unlikeContent(userId, contentId) {
-  if (!hasSupabaseConfig || !userId) return
-  await supabase
+  if (!hasSupabaseConfig || !userId) throw new Error('Sign in while online to like videos.')
+  const { error } = await supabase
     .from('liked_videos')
     .delete()
     .eq('user_id', userId)
     .eq('content_id', contentId)
+  if (error) throw error
 }
 
 export async function fetchLikeCount(contentId) {
@@ -157,10 +160,7 @@ export async function fetchLikeCount(contentId) {
     .from('liked_videos')
     .select('*', { count: 'exact', head: true })
     .eq('content_id', contentId)
-  if (error) {
-    console.error('Error fetching like count:', error)
-    return 0
-  }
+  if (error) throw error
   return count ?? 0
 }
 

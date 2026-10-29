@@ -211,37 +211,37 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="theme-app-bg space-y-4 p-4 lg:p-4">
-      <section className="-mx-4 -mt-4 min-h-screen bg-[#121212] px-4 pb-28 pt-20 text-white lg:hidden">
+    <div className="profile-layout theme-app-bg mx-auto max-w-6xl space-y-6 p-5 sm:p-8">
+      <section className="mobile-profile rounded-3xl border border-[var(--app-border)] bg-white px-4 pb-8 pt-8 text-[var(--app-text)] lg:hidden">
         <div className="flex flex-col items-center text-center">
-          <label className="relative h-20 w-20 cursor-pointer rounded-full border border-white/20 bg-[#151a17]" title="Change profile picture">
+          <label className="relative h-20 w-20 cursor-pointer rounded-full border border-[var(--app-border)] bg-[#151a17]" title="Change profile picture">
             <ProfileAvatar profile={profile} />
             <span className="absolute inset-x-0 bottom-0 rounded-b-full bg-black/65 py-1 text-[10px] font-semibold">{avatarUploading ? 'Uploading…' : 'Change'}</span>
             <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={avatarUploading} onChange={handleAvatarChange} />
           </label>
-          {avatarMessage ? <p className="mt-2 text-xs text-white/60">{avatarMessage}</p> : null}
+          {avatarMessage ? <p className="mt-2 text-xs text-[var(--app-muted)]">{avatarMessage}</p> : null}
           <div className="mt-4 flex max-w-full items-center justify-center gap-2">
             <ProfileBadgeIcon />
             <h1 className="truncate text-2xl font-black tracking-tight">{displayName}</h1>
           </div>
-          <p className="text-lg text-white/55">@{handle}</p>
+          <p className="text-lg text-[var(--app-muted)]">@{handle}</p>
           <form onSubmit={handleUsernameSave} className="mt-4 flex w-full max-w-xs gap-2">
-            <div className="flex min-w-0 flex-1 items-center rounded-lg border border-white/20 bg-white/5 px-3"><span className="text-white/45">@</span><input value={usernameDraft} onChange={(e)=>setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))} maxLength={30} aria-label="Username" className="min-w-0 flex-1 bg-transparent py-2 text-sm text-white outline-none"/></div>
+            <div className="flex min-w-0 flex-1 items-center rounded-lg border border-[var(--app-border)] bg-[#f7f8fa] px-3"><span className="text-[var(--app-muted)]">@</span><input value={usernameDraft} onChange={(e)=>setUsernameDraft(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,''))} maxLength={30} aria-label="Username" className="min-w-0 flex-1 bg-transparent py-2 text-sm text-[var(--app-text)] outline-none"/></div>
             <button disabled={usernameSaving || usernameDraft===profile.username} className="rounded-lg bg-white px-3 py-2 text-sm font-semibold text-[#202124] disabled:opacity-40">{usernameSaving?'Saving…':'Save'}</button>
           </form>
-          {usernameMessage?<p className="mt-2 text-xs text-white/60">{usernameMessage}</p>:null}
-          <div className="mt-6 grid w-full max-w-sm grid-cols-2 divide-x divide-white/10">
-            <div><p className="text-3xl font-black">{videos.length}</p><p className="text-lg text-white/55">Posts</p></div>
-            <div><p className="text-3xl font-black">{totalLikes}</p><p className="text-lg text-white/55">Likes</p></div>
+          {usernameMessage?<p className="mt-2 text-xs text-[var(--app-muted)]">{usernameMessage}</p>:null}
+          <div className="mt-6 grid w-full max-w-sm grid-cols-2 divide-x divide-[var(--app-border)]">
+            <div><p className="text-3xl font-black">{videos.length}</p><p className="text-lg text-[var(--app-muted)]">Posts</p></div>
+            <div><p className="text-3xl font-black">{totalLikes}</p><p className="text-lg text-[var(--app-muted)]">Likes</p></div>
           </div>
-          {profile.bio ? <p className="mt-5 text-xl">{profile.bio}</p> : <p className="mt-5 text-base text-white/45">No bio yet.</p>}
+          {profile.bio ? <p className="mt-5 text-xl">{profile.bio}</p> : <p className="mt-5 text-base text-[var(--app-muted)]">No bio yet.</p>}
         </div>
-        <div className="mt-8 grid grid-cols-5 items-end border-b border-white/20 text-white/55">
+        <div className="mt-8 grid grid-cols-5 items-end border-b border-[var(--app-border)] text-[var(--app-muted)]">
           {tabs.map((tab, index) => (
             <button
               key={`${tab.icon}-${index}`}
               onClick={() => setActiveTab(index)}
-              className={`pb-3 text-3xl ${activeTab === index ? 'border-b-2 border-white text-white' : ''}`}
+              className={`pb-3 text-3xl ${activeTab === index ? 'border-b-2 border-[var(--brand-primary)] text-[var(--app-text)]' : ''}`}
             >
               {tab.icon}
             </button>
@@ -251,17 +251,17 @@ export default function ProfilePage() {
         {activeTab === 0 && (
           <>
             {videosLoading ? (
-              <div className="border-t border-white/10 py-12 text-center text-white/50">
+              <div className="border-t border-[var(--app-border)] py-12 text-center text-[var(--app-muted)]">
                 <p className="text-lg font-semibold">Loading your posts...</p>
               </div>
             ) : videosError ? (
-              <div className="border-t border-white/10 py-12 text-center text-white/50">
+              <div className="border-t border-[var(--app-border)] py-12 text-center text-[var(--app-muted)]">
                 <p className="mx-auto max-w-xs text-lg font-semibold">{videosError}</p>
               </div>
             ) : videos.length === 0 ? (
-              <div className="border-t border-white/10 py-12 text-center text-white/50">
+              <div className="border-t border-[var(--app-border)] py-12 text-center text-[var(--app-muted)]">
                 <p className="text-lg font-semibold">No posts yet</p>
-                <Link to="/upload" className="mt-3 inline-block rounded-full bg-[var(--brand-olive)] px-5 py-2 text-sm font-bold text-white">Create your first post</Link>
+                <Link to="/upload" className="mt-3 inline-block rounded-full bg-[var(--brand-olive)] px-5 py-2 text-sm font-bold text-[var(--app-text)]">Create your first post</Link>
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-px bg-black">
@@ -272,7 +272,7 @@ export default function ProfilePage() {
                       {isDirectVideo ? (
                         <video src={video.media_url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-black p-2 text-center text-xs font-semibold text-white/70">
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-black p-2 text-center text-xs font-semibold text-[var(--app-muted)]">
                           {video.title}
                         </div>
                       )}
@@ -280,7 +280,7 @@ export default function ProfilePage() {
                       <button
                         type="button"
                         onClick={(event) => { event.preventDefault(); handleTogglePin(video) }}
-                        className="absolute right-1 top-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-black text-white"
+                        className="absolute right-1 top-2 rounded-full bg-black/60 px-2 py-1 text-[10px] font-black text-[var(--app-text)]"
                       >
                         {video.is_pinned ? 'Unpin' : 'Pin'}
                       </button>
@@ -296,11 +296,11 @@ export default function ProfilePage() {
         {activeTab === 3 && (
           <>
             {likedVideosLoading ? (
-              <div className="border-t border-white/10 py-12 text-center text-white/50">
+              <div className="border-t border-[var(--app-border)] py-12 text-center text-[var(--app-muted)]">
                 <p className="text-lg font-semibold">Loading liked videos...</p>
               </div>
             ) : likedVideos.length === 0 ? (
-              <div className="border-t border-white/10 py-12 text-center text-white/50">
+              <div className="border-t border-[var(--app-border)] py-12 text-center text-[var(--app-muted)]">
                 <p className="text-lg font-semibold">No liked videos yet</p>
               </div>
             ) : (
@@ -312,7 +312,7 @@ export default function ProfilePage() {
                       {isDirectVideo ? (
                         <video src={video.media_url} className="h-full w-full object-cover" muted playsInline preload="metadata" />
                       ) : (
-                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-black p-2 text-center text-xs font-semibold text-white/70">
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-zinc-800 to-black p-2 text-center text-xs font-semibold text-[var(--app-muted)]">
                           {video.title}
                         </div>
                       )}
@@ -326,16 +326,16 @@ export default function ProfilePage() {
         )}
 
         {(activeTab === 1 || activeTab === 2 || activeTab === 4) && (
-          <div className="border-t border-white/10 py-12 text-center text-white/50">
+          <div className="border-t border-[var(--app-border)] py-12 text-center text-[var(--app-muted)]">
             <p className="text-lg font-semibold">No {tabs[activeTab].label.toLowerCase()} yet</p>
           </div>
         )}
       </section>
 
       <div className="hidden lg:block">
-        <h1 className="text-2xl font-bold text-neon-cyan">Profile</h1>
+        <h1 className="text-2xl font-bold text-[var(--app-text)]">Profile</h1>
       </div>
-      <section className="theme-card hidden rounded-xl border p-4 lg:block">
+      <section className="theme-card hidden rounded-3xl border p-8 lg:block">
         <div className="flex items-start gap-4">
           <label className="relative h-20 w-20 cursor-pointer rounded-full" title="Change profile picture">
             <ProfileAvatar profile={profile} />

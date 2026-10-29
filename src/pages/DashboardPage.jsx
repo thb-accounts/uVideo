@@ -5,11 +5,14 @@ import FeedItem from '../components/FeedItem'
 import { getOfflineItems, prefetchBlinks } from '../lib/offlineStore'
 import { isShortContent } from '../lib/contentApi'
 import { useOnline } from '../lib/useOnline'
+import { useOfflineLibrary } from '../hooks/useOfflineLibrary'
+import OfflineCollection from '../components/OfflineCollection'
 
 const feedModes = ['for-you', 'explore']
 
 export default function DashboardPage({ mobileOnly = false }) {
   const online = useOnline()
+  const { items: offlineItems } = useOfflineLibrary()
   const location = useLocation()
   const navigate = useNavigate()
   const [feed, setFeed] = useState([])
@@ -89,7 +92,7 @@ export default function DashboardPage({ mobileOnly = false }) {
   useEffect(() => {
     const activeItem = feed[activeIndex]
     if (!activeItem) return
-    if (!mobileOnly && online) window.history.replaceState(null, '', `/video/${activeItem.id}`)
+    // Keep /blinks in the address bar so reconnecting and refreshing restore the right feed.
   }, [activeIndex, feed, mobileOnly, online])
 
   function handleDeleted(id) {
@@ -128,9 +131,11 @@ export default function DashboardPage({ mobileOnly = false }) {
     else cycleMode(-1)
   }
 
+  if (!online) return <OfflineCollection blinks items={offlineItems.filter(isShortContent)}/>
+
   if (loading) {
     return (
-      <div className={`flex ${mobileOnly ? 'h-dvh' : 'h-[calc(100dvh-4rem)]'} w-full items-center justify-center bg-black`}>
+      <div className={`flex ${mobileOnly ? 'h-dvh' : 'blinks-height'} w-full items-center justify-center bg-black`}>
         <div className="flex flex-col items-center gap-3">
           <div className="h-10 w-10 rounded-full border-4 brand-spinner animate-spin" />
           <p className="text-[rgba(227,232,191,0.62)] text-sm">Loading feed…</p>
@@ -141,7 +146,7 @@ export default function DashboardPage({ mobileOnly = false }) {
 
   if (feed.length === 0) {
     return (
-      <div className={`flex ${mobileOnly ? 'h-dvh' : 'h-[calc(100dvh-4rem)]'} w-full flex-col items-center justify-center bg-[var(--brand-black)] text-[var(--brand-cream)] gap-4`}>
+      <div className={`flex ${mobileOnly ? 'h-dvh' : 'blinks-height'} w-full flex-col items-center justify-center bg-[#101a14] text-white gap-4`}>
         <div className="text-4xl">📭</div>
         {loadError && <p className="max-w-xs rounded-xl brand-error p-3 text-center text-sm">{loadError}</p>}
         <p className="max-w-xs text-center text-xl font-semibold">
@@ -161,11 +166,11 @@ export default function DashboardPage({ mobileOnly = false }) {
   }
 
   return (
-    <>
+    <div className="relative">
       {!online && <div className="fixed right-4 top-20 z-40 rounded-full bg-black/80 px-3 py-1 text-xs text-white">Offline · saved Blinks</div>}
       {!mobileOnly && <button
         onClick={() => cycleMode(1)}
-        className="fixed left-1/2 top-3 z-30 hidden -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur lg:block"
+        className="absolute left-1/2 top-3 z-40 -translate-x-1/2 rounded-full bg-black/40 px-3 py-1 text-xs font-semibold text-white backdrop-blur lg:block"
       >
         {tab === 'for-you' ? 'For You' : 'Explore'} · Swipe ↔
       </button>}
@@ -174,7 +179,7 @@ export default function DashboardPage({ mobileOnly = false }) {
         ref={containerRef}
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
-        className={`${mobileOnly ? 'h-dvh lg:hidden' : 'h-[calc(100dvh-4rem)]'} overflow-y-scroll snap-y snap-mandatory bg-[var(--brand-black)]`}
+        className={`${mobileOnly ? 'h-dvh lg:hidden' : 'blinks-height'} overflow-y-scroll snap-y snap-mandatory bg-[#101a14]`}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         <style>{`div::-webkit-scrollbar{display:none}`}</style>
@@ -182,7 +187,7 @@ export default function DashboardPage({ mobileOnly = false }) {
           <div
             key={item.id}
             data-feed-index={index}
-            className={`${mobileOnly ? 'h-dvh' : 'h-[calc(100dvh-4rem)]'} w-full snap-start snap-always`}
+            className={`${mobileOnly ? 'h-dvh' : 'blinks-height'} w-full snap-start snap-always`}
           >
             <FeedItem
               item={item}
@@ -201,6 +206,6 @@ export default function DashboardPage({ mobileOnly = false }) {
           </div>
         </div>
       )}
-    </>
+    </div>
   )
 }

@@ -1,6 +1,7 @@
-const SHELL = 'mplace-shell-v4'
+const SHELL = 'mplace-shell-v5'
 const MEDIA_PREFIX = 'mplace-media-v2-'
 const MAX_BYTES = 60 * 1024 * 1024
+const downloads = new Map()
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -19,14 +20,14 @@ self.addEventListener('activate', event => event.waitUntil((async () => {
   await self.clients.claim()
 })()))
 
-async function saveVideo(item) {
+async function saveVideo(item, signal) {
   const name = MEDIA_PREFIX + encodeURIComponent(item.id)
   const temp = name + '-pending'
   await caches.delete(temp)
   const cache = await caches.open(temp)
   let total = 0
   async function save(url, text = false) {
-    const response = await fetch(url, { mode: 'cors', credentials: 'omit' })
+    const response = await fetch(url, { mode: 'cors', credentials: 'omit', signal })
     if (response.status !== 200 || response.type === 'opaque') throw new Error('Video host does not permit offline access')
     const mime = response.headers.get('content-type') || ''
     if (/text\/html/i.test(mime)) throw new Error('Video URL returned a web page')
@@ -65,18 +66,39 @@ async function saveVideo(item) {
       if (/youtube\.com|youtu\.be/i.test(mediaUrl)) throw new Error('Embedded videos cannot be saved offline')
       await save(mediaUrl)
     }
+    if (signal?.aborted) throw new Error('Download cancelled')
+    let thumbnail = ''
+    if (item.thumbnail) {
+      try { await save(item.thumbnail); thumbnail = item.thumbnail } catch {
+        if (signal?.aborted) throw new Error('Download cancelled')
+      }
+    }
     const finalCache = await caches.open(name)
     for (const request of await cache.keys()) await finalCache.put(request, await cache.match(request))
     await caches.delete(temp)
-    return mediaUrl
+    return { url: mediaUrl, bytes: total, thumbnail: thumbnail ? offlineUrl(item.id, thumbnail) : '' }
   } catch (error) { await caches.delete(temp); throw error }
 }
 self.addEventListener('message', event => {
   const { type, item, id } = event.data || {}
-  if (type === 'OFFLINE_CACHE' && item?.id && item?.url && event.ports[0]) {
-    event.waitUntil(saveVideo(item).then(url => event.ports[0].postMessage({ ok: true, url })).catch(error => event.ports[0].postMessage({ ok: false, error: error.message })))
+  const reply = data => event.ports?.[0]?.postMessage(data)
+  if (type === 'OFFLINE_CACHE' && item?.id && item?.url && event.ports?.[0]) {
+    if (downloads.has(item.id)) { reply({ ok: false, error: 'Download already in progress' }); return }
+    const controller = new AbortController()
+    const task = saveVideo(item, controller.signal)
+    downloads.set(item.id, { controller, task })
+    event.waitUntil(task.then(result => reply({ ok: true, ...result }))
+      .catch(error => reply({ ok: false, error: error.message }))
+      .finally(() => downloads.delete(item.id)))
   }
-  if (type === 'OFFLINE_REMOVE' && id) event.waitUntil(caches.delete(MEDIA_PREFIX + encodeURIComponent(id)))
+  if (type === 'OFFLINE_REMOVE' && id) event.waitUntil((async () => {
+    const active = downloads.get(id)
+    active?.controller.abort()
+    await active?.task.catch(() => {})
+    await caches.delete(MEDIA_PREFIX + encodeURIComponent(id))
+    await caches.delete(MEDIA_PREFIX + encodeURIComponent(id) + '-pending')
+    reply({ ok: true })
+  })())
 })
 // Same-origin playback avoids returning a cross-origin CORS response to the
 // browser's no-CORS video request. Only previously cached bytes are served.
@@ -120,6 +142,10 @@ async function offlineResponse(request, parsed) {
 self.addEventListener('fetch', event => {
   if (event.request.method !== 'GET') return
   const url = new URL(event.request.url)
+  if (url.origin === self.location.origin && url.searchParams.has('mplace-connectivity')) {
+    event.respondWith(fetch(event.request))
+    return
+  }
   if (url.origin === self.location.origin && url.pathname.startsWith(OFFLINE_PATH)) {
     event.respondWith(offlineResponse(event.request, url))
     return

@@ -1,16 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/useAuth'
 import {
-  likeContent,
-  unlikeContent,
-  fetchLikeStatus,
-  fetchLikeCount,
   deleteContent,
 } from '../lib/contentApi'
 import { parseVTT } from '../lib/captionUtils'
 import { bunnyEmbedUrl, isBunnyStreamContent } from '../lib/mediaUrls'
 import OfflineVideo from './OfflineVideo'
+import DownloadButton from './DownloadButton'
+import { useContentLike } from '../hooks/useContentLike'
 
 // ─── Video / Embed Player ─────────────────────────────────────────────────────
 
@@ -264,10 +262,8 @@ function DeleteModal({ onConfirm, onCancel, loading }) {
 // ─── Main FeedItem ────────────────────────────────────────────────────────────
 export default function FeedItem({ item, isActive, onDeleted, forcePaused = false, immersive = false }) {
   const { user } = useAuth()
-  const navigate = useNavigate()
 
-  const [liked, setLiked] = useState(false)
-  const [likeCount, setLikeCount] = useState(item?.like_count ?? 0)
+  const { liked, likeCount, likeDisabled, likeError, toggleLike } = useContentLike(item?.id, item?.like_count ?? 0)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
@@ -278,34 +274,6 @@ export default function FeedItem({ item, isActive, onDeleted, forcePaused = fals
   useEffect(() => {
     if (!forcePaused) setIsPaused(false)
   }, [forcePaused, isActive])
-
-  // Fetch real like status and counts on mount
-  useEffect(() => {
-    if (!item?.id) return
-    if (user?.id) {
-      fetchLikeStatus(user.id, item.id).then(setLiked)
-    }
-  }, [user?.id, item?.id])
-
-  // Sync counts on mount or when item changes
-  useEffect(() => {
-    if (!item?.id) return
-    fetchLikeCount(item.id).then((count) => setLikeCount(count))
-  }, [item?.id])
-
-
-
-  async function handleLike() {
-    if (!user) {
-      navigate('/auth')
-      return
-    }
-    const nowLiked = !liked
-    setLiked(nowLiked)
-    setLikeCount((prev) => (nowLiked ? prev + 1 : Math.max(prev - 1, 0)))
-    if (nowLiked) await likeContent(user.id, item.id)
-    else await unlikeContent(user.id, item.id)
-  }
 
   async function handleDelete() {
     setDeleting(true)
@@ -426,11 +394,14 @@ export default function FeedItem({ item, isActive, onDeleted, forcePaused = fals
           </div>
 
 
+          {likeError && <p role="alert" className="max-w-40 rounded-lg bg-black/80 p-2 text-xs text-white">{likeError}</p>}
           {/* Like */}
           <button
-            onClick={handleLike}
+            onClick={toggleLike}
+            disabled={likeDisabled}
+            aria-pressed={liked}
             className="flex flex-col items-center gap-1 group"
-            aria-label="Like"
+            aria-label={liked ? 'Unlike' : 'Like'}
           >
             <span
               className={`text-4xl leading-none transition-transform duration-150 lg:text-3xl ${liked ? 'scale-125' : 'group-active:scale-125'}`}
@@ -441,6 +412,8 @@ export default function FeedItem({ item, isActive, onDeleted, forcePaused = fals
           </button>
 
 
+
+          <DownloadButton item={item} compact/>
 
           {/* Share */}
           <button

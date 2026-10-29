@@ -3,7 +3,7 @@ export default function OfflineVideo({ src, active = false, className = '', cont
   const ref = useRef(null)
   useEffect(() => {
     if (active) ref.current?.play().catch(() => {})
-    else ref.current?.pause()
-  }, [active, src])
+    else if (!controls) ref.current?.pause()
+  }, [active, src, controls])
   return <video ref={ref} src={src} className={className} controls={controls} playsInline loop={!controls} preload="metadata" />
 }
