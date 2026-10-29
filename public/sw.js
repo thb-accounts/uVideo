@@ -1,4 +1,4 @@
-const SHELL = 'mplace-shell-v5'
+const SHELL = 'mplace-shell-v6'
 const MEDIA_PREFIX = 'mplace-media-v2-'
 const MAX_BYTES = 60 * 1024 * 1024
 const downloads = new Map()
@@ -12,6 +12,8 @@ self.addEventListener('install', event => {
     await cache.put('/index.html', response)
     const assets = [...html.matchAll(/(?:src|href)="(\/assets\/[^" ]+)"/g)].map(match => match[1])
     await Promise.all(assets.map(async url => { const asset = await fetch(url); if (!asset.ok) throw new Error('Could not cache app asset'); await cache.put(url, asset) }))
+    // The startup animation should also be available when reopening offline.
+    try { const animation = await fetch('/dee-dee-yawning.gif'); if (animation.ok) await cache.put('/dee-dee-yawning.gif', animation) } catch { /* App playback still works without the optional animation. */ }
     await self.skipWaiting()
   })())
 })

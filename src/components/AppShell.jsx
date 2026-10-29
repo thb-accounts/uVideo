@@ -82,7 +82,6 @@ export default function AppShell() {
           <NavLink to="/settings" className={({isActive})=>`mb-1 flex h-12 items-center rounded-xl ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name="settings"/>{sidebarOpen&&<span className="text-sm font-medium">Settings</span>}</NavLink>
           <NavLink to="/soundboard" className={({isActive})=>`flex h-12 items-center rounded-xl ${sidebarOpen?'gap-5 px-4':'justify-center'} ${isActive?'bg-[#e7f3ec] text-[#185c3d]':'text-[#3c4043] hover:bg-[#f1f3f4]'}`}><Icon name="soundboard"/>{sidebarOpen&&<span className="text-sm font-medium">Soundboard</span>}</NavLink>
         </nav>
-        {sidebarOpen&&<div className="sidebar-note mx-5 mt-auto mb-5 rounded-2xl p-4"><p className="text-sm font-bold">Make room for your ideas.</p><p className="mt-2 text-xs leading-5 text-[var(--app-muted)]">Share something worth watching.</p><Link to="/upload" className="mt-3 inline-flex text-sm font-bold text-[var(--brand-primary)]">Create a video ↗</Link></div>}
         {sidebarOpen&&user&&<button onClick={handleSignOut} className="mx-7 mb-6 mt-auto text-left text-sm font-medium text-[#1f6f4a]">Sign out</button>}
       </aside>
 
