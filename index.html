@@ -10,8 +10,19 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>MPlace Videos</title>
+    <style>
+      .boot-screen { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px; background: #f7f8fa; color: #18251f; font-family: system-ui, -apple-system, sans-serif; text-align: center; }
+      .boot-screen img { display: block; width: 160px; height: 160px; margin: 0 auto; border-radius: 24px; object-fit: cover; }
+      .boot-screen p { margin: 20px 0 0; font-size: 16px; line-height: 1.5; font-weight: 600; }
+    </style>
   </head>
   <body>
+    <div id="mplace-startup" class="boot-screen" role="status" aria-live="polite" aria-label="Loading MPlace Videos">
+      <div>
+        <img src="/dee-dee-yawning.gif" alt="Dee-Dee yawning" width="160" height="160" fetchpriority="high" />
+        <p>El Meow Meow (Dee-Dee) yawning.</p>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

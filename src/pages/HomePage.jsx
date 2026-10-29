@@ -71,10 +71,6 @@ export default function HomePage(){
   if (!online) return <OfflineCollection items={offlineItems.filter(item => !isShortContent(item))}/>
 
   return <div className="home-layout mx-auto max-w-[1680px] px-4 pb-14 sm:px-8 lg:px-10">
-    {!requestedSearch && requestedCategory === 'All' && <section className="discovery-banner mt-7 flex flex-wrap items-center justify-between gap-6 rounded-3xl p-6 sm:p-8">
-      <div><p className="eyebrow">YOUR DAILY DOSE OF DISCOVERY</p><h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">A little curiosity.<br/>Something worth watching.</h1><p className="mt-3 max-w-lg text-sm leading-6 text-[var(--app-muted)]">Fresh perspectives, useful ideas, and creators with something to share.</p></div>
-      <Link to="/blinks" className="blinks-entry flex items-center gap-4 rounded-2xl p-5"><span className="grid h-12 w-12 place-items-center rounded-full bg-white/80 text-[var(--brand-primary)]"><PlayIcon/></span><span><strong className="block text-base">Short on time?</strong><span className="mt-1 block text-sm text-[var(--app-muted)]">Explore Blinks ↗</span></span></Link>
-    </section>}
     <div className="category-bar sticky top-16 z-30 -mx-4 bg-[var(--app-bg)] px-4 py-5 sm:-mx-8 sm:px-8 lg:-mx-10 lg:px-10">
       <nav aria-label="Video categories" className="flex gap-2 overflow-x-auto [scrollbar-width:none]">
         {categories.map(category=><Link key={category} aria-current={requestedCategory===category?'page':undefined} to={categoryHref(category)} className={`category-chip shrink-0 rounded-full px-4 py-2 text-sm font-medium transition ${requestedCategory===category?'selected':'bg-white text-[var(--app-muted)]'}`}>{category}</Link>)}
