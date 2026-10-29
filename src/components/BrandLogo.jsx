@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
 
-const MPLACE_LOGO = 'https://unrealcake8.github.io/cdn-hls/mplace.png'
+const MPLACE_LOGO = '/mplace.png'
 
 export default function BrandLogo({ compact = false }) {
   return (

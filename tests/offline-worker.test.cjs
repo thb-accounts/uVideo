@@ -104,14 +104,14 @@ test('removing an active download aborts it and leaves no video cache', async ()
 })
 test('connectivity probes never succeed from a cached app shell', async () => {
   const env = setup(async () => { throw new Error('No connection') })
-  await vm.runInContext("caches.open('mplace-shell-v6').then(cache => cache.put('/index.html?mplace-connectivity=1', new Response('cached shell')))", env.context)
+  await vm.runInContext("caches.open('mplace-shell-v7').then(cache => cache.put('/index.html?mplace-connectivity=1', new Response('cached shell')))", env.context)
   let response
   env.handlers.fetch({ request: new Request('https://app.test/index.html?mplace-connectivity=1'), respondWith(value) { response = value } })
   await assert.rejects(response, /No connection/)
 })
 test('navigation uses the saved application shell when the network is unavailable', async () => {
   const env = setup(async () => { throw new Error('No connection') })
-  await vm.runInContext("caches.open('mplace-shell-v6').then(cache => cache.put('/index.html', new Response('MPlace app')))", env.context)
+  await vm.runInContext("caches.open('mplace-shell-v7').then(cache => cache.put('/index.html', new Response('MPlace app')))", env.context)
   let response
   env.handlers.fetch({ request: { method: 'GET', url: 'https://app.test/blinks', mode: 'navigate' }, respondWith(value) { response = value } })
   assert.equal(await (await response).text(), 'MPlace app')
